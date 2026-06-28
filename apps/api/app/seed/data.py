@@ -25,6 +25,26 @@ COMMON_SAFETY_CLAUSES = [
 ]
 
 
+ADVERTISING_LAW_CLAUSES = [
+    {"no": "第四条", "title": "广告不得含有虚假或者引人误解的内容，不得欺骗、误导消费者"},
+    {"no": "第九条", "title": "广告不得使用国家级、最高级、最佳等用语"},
+    {"no": "第十一条", "title": "广告涉及专利、数据、统计资料、调查结果等引证内容应真实、准确并表明出处"},
+    {"no": "第十六条", "title": "医疗、药品、医疗器械广告不得含有表示功效、安全性的断言或者保证等内容"},
+    {"no": "第十七条", "title": "除医疗、药品、医疗器械广告外，禁止涉及疾病治疗功能，不得使用医疗用语或易与药品、医疗器械混淆的用语"},
+    {"no": "第十八条", "title": "保健食品广告不得表示功效、安全性的断言或者保证，不得涉及疾病预防、治疗功能，不得声称或者暗示广告商品为保障健康所必需"},
+    {"no": "第二十八条", "title": "广告以虚假或者引人误解的内容欺骗、误导消费者的，构成虚假广告"},
+]
+
+
+ADVERTISING_LAW_STANDARD = {
+    "code": "中华人民共和国广告法",
+    "name": "中华人民共和国广告法",
+    "version": "2021修正",
+    "effective_date": "2021-04-29",
+    "clauses": ADVERTISING_LAW_CLAUSES,
+}
+
+
 SEED_INDUSTRIES = [
     {"name": "食品检测", "code": "food", "description": "预包装食品标签、配料、净含量、营养声称与常规安全项目审核。"},
     {"name": "乳制品检测", "code": "dairy", "description": "液态乳、乳粉、发酵乳等乳制品标签和理化/微生物检测审核。"},
@@ -39,6 +59,7 @@ SEED_INDUSTRIES = [
 
 SEED_STANDARDS = {
     "food": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "GB 7718-2011", "name": "预包装食品标签通则", "version": "2011", "effective_date": "2012-04-20", "clauses": BASE_FOOD_CLAUSES},
         {"code": "GB 28050-2011", "name": "预包装食品营养标签通则", "version": "2011", "effective_date": "2013-01-01", "clauses": NUTRITION_CLAUSES},
         {"code": "GB 2760-2024", "name": "食品安全国家标准 食品添加剂使用标准", "version": "2024", "effective_date": "2025-02-08", "clauses": [{"no": "通用", "title": "食品添加剂使用范围与限量"}]},
@@ -47,6 +68,7 @@ SEED_STANDARDS = {
         {"code": "GB 29921-2021", "name": "食品安全国家标准 预包装食品中致病菌限量", "version": "2021", "effective_date": "2021-11-22", "clauses": [{"no": "通用", "title": "沙门氏菌、金黄色葡萄球菌、单核细胞增生李斯特氏菌等致病菌限量"}]},
     ],
     "dairy": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "GB 7718-2011", "name": "预包装食品标签通则", "version": "2011", "effective_date": "2012-04-20", "clauses": BASE_FOOD_CLAUSES},
         {"code": "GB 28050-2011", "name": "预包装食品营养标签通则", "version": "2011", "effective_date": "2013-01-01", "clauses": NUTRITION_CLAUSES},
         {"code": "GB 19301-2010", "name": "食品安全国家标准 生乳", "version": "2010", "effective_date": "2010-06-01", "clauses": [{"no": "4", "title": "感官、理化、污染物和微生物要求"}]},
@@ -57,35 +79,41 @@ SEED_STANDARDS = {
         {"code": "GB 2762-2022", "name": "食品安全国家标准 食品中污染物限量", "version": "2022", "effective_date": "2023-06-30", "clauses": COMMON_SAFETY_CLAUSES},
     ],
     "canned_food": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "GB 7718-2011", "name": "预包装食品标签通则", "version": "2011", "effective_date": "2012-04-20", "clauses": BASE_FOOD_CLAUSES},
         {"code": "GB 7098-2015", "name": "食品安全国家标准 罐头食品", "version": "2015", "effective_date": "2016-11-13", "clauses": [{"no": "3.4", "title": "商业无菌要求"}, {"no": "3.3", "title": "污染物和真菌毒素限量"}]},
         {"code": "GB 4789.26-2013", "name": "食品安全国家标准 食品微生物学检验 商业无菌检验", "version": "2013", "effective_date": "2014-06-01", "clauses": [{"no": "方法", "title": "罐头食品商业无菌检验方法"}]},
         {"code": "GB 2762-2022", "name": "食品安全国家标准 食品中污染物限量", "version": "2022", "effective_date": "2023-06-30", "clauses": COMMON_SAFETY_CLAUSES},
     ],
     "frozen_food": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "GB 7718-2011", "name": "预包装食品标签通则", "version": "2011", "effective_date": "2012-04-20", "clauses": BASE_FOOD_CLAUSES},
         {"code": "GB 19295-2021", "name": "食品安全国家标准 速冻面米与调制食品", "version": "2021", "effective_date": "2022-03-07", "clauses": [{"no": "3", "title": "原料、感官、污染物和微生物要求"}]},
         {"code": "GB 29921-2021", "name": "食品安全国家标准 预包装食品中致病菌限量", "version": "2021", "effective_date": "2021-11-22", "clauses": COMMON_SAFETY_CLAUSES},
     ],
     "puffed_food": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "GB 7718-2011", "name": "预包装食品标签通则", "version": "2011", "effective_date": "2012-04-20", "clauses": BASE_FOOD_CLAUSES},
         {"code": "GB 17401-2014", "name": "食品安全国家标准 膨化食品", "version": "2014", "effective_date": "2015-05-24", "clauses": [{"no": "3", "title": "酸价、过氧化值、污染物和微生物要求"}]},
         {"code": "GB 5009.227-2023", "name": "食品安全国家标准 食品中过氧化值的测定", "version": "2023", "effective_date": "2024-03-06", "clauses": [{"no": "方法", "title": "油脂氧化相关过氧化值测定"}]},
         {"code": "GB 5009.229-2016", "name": "食品安全国家标准 食品中酸价的测定", "version": "2016", "effective_date": "2017-03-01", "clauses": [{"no": "方法", "title": "油脂酸败相关酸价测定"}]},
     ],
     "candy": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "GB 7718-2011", "name": "预包装食品标签通则", "version": "2011", "effective_date": "2012-04-20", "clauses": BASE_FOOD_CLAUSES},
         {"code": "GB 17399-2016", "name": "食品安全国家标准 糖果", "version": "2016", "effective_date": "2017-06-23", "clauses": [{"no": "3", "title": "感官、污染物、微生物和食品添加剂要求"}]},
         {"code": "GB 9678.2-2014", "name": "巧克力、代可可脂巧克力及其制品", "version": "2014", "effective_date": "2015-05-24", "clauses": [{"no": "标签", "title": "可可脂/代可可脂相关标示"}]},
         {"code": "GB 2760-2024", "name": "食品安全国家标准 食品添加剂使用标准", "version": "2024", "effective_date": "2025-02-08", "clauses": COMMON_SAFETY_CLAUSES},
     ],
     "pet_food": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "农业农村部公告第20号", "name": "宠物饲料管理办法及配套规范", "version": "2018", "effective_date": "2018-06-01", "clauses": [{"no": "宠物饲料标签规定", "title": "产品名称、原料组成、成分分析保证值、适用阶段、净含量"}]},
         {"code": "GB/T 31216-2014", "name": "全价宠物食品 犬粮", "version": "2014", "effective_date": "2015-03-08", "clauses": [{"no": "8", "title": "标签、营养成分和卫生指标"}]},
         {"code": "GB/T 31217-2014", "name": "全价宠物食品 猫粮", "version": "2014", "effective_date": "2015-03-08", "clauses": [{"no": "8", "title": "标签、营养成分和卫生指标"}]},
         {"code": "GB 13078-2017", "name": "饲料卫生标准", "version": "2017", "effective_date": "2018-05-01", "clauses": [{"no": "通用", "title": "霉菌毒素、重金属、微生物等卫生指标"}]},
     ],
     "electronics": [
+        ADVERTISING_LAW_STANDARD,
         {"code": "GB 4943.1-2022", "name": "音视频、信息技术和通信技术设备 第1部分：安全要求", "version": "2022", "effective_date": "2023-08-01", "clauses": [{"no": "F", "title": "标识、说明和警示"}]},
         {"code": "GB/T 9254.1-2021", "name": "信息技术设备、多媒体设备和接收机 电磁兼容 发射要求", "version": "2021", "effective_date": "2022-07-01", "clauses": [{"no": "通用", "title": "EMC 发射要求"}]},
         {"code": "GB 17625.1-2022", "name": "电磁兼容 限值 谐波电流发射限值", "version": "2022", "effective_date": "2024-07-01", "clauses": [{"no": "通用", "title": "谐波电流发射限值"}]},
@@ -108,34 +136,42 @@ COMMON_FOOD_RULES = [
     {"standard_code": "GB 2760-2024", "name": "添加剂合规风险", "rule_type": "ai", "field_key": "ingredients", "trigger": "山梨酸、苯甲酸、糖精钠、甜蜜素、安赛蜜、柠檬黄、日落黄、防腐剂、色素、甜味剂", "risk_level": "medium", "suggestion": "请核对食品添加剂使用范围和限量；必要时增加添加剂检测项目。"},
     {"standard_code": "GB 2762-2022", "name": "污染物限量风险", "rule_type": "ai", "field_key": "product_type", "trigger": "谷物、水产、肉制品、蔬菜、水果、坚果、婴幼儿", "risk_level": "medium", "suggestion": "请按适用品类核对污染物限量，必要时增加铅、镉、砷、汞等项目。"},
     {"standard_code": "GB 29921-2021", "name": "致病菌限量风险", "rule_type": "ai", "field_key": "product_type", "trigger": "即食、冷藏、速冻、乳、肉、蛋、水产、调制食品", "risk_level": "medium", "suggestion": "请按品类核对致病菌限量，必要时增加沙门氏菌、金黄色葡萄球菌等微生物项目。"},
-    {"standard_code": "GB 7718-2011", "name": "绝对化宣传用语", "rule_type": "ai", "field_key": "claims", "trigger": "最好、第一、最安全、100%、纯天然、零添加、无任何、顶级、唯一", "risk_level": "high", "suggestion": "删除或弱化绝对化、无依据的功效化描述，改为客观表述。"},
+]
+
+
+COMMON_AD_RULES = [
+    {"standard_code": "中华人民共和国广告法", "name": "广告法绝对化用语风险", "rule_type": "ai", "field_key": "claims", "trigger": "国家级、最高级、最佳、最优、最好、顶级、第一、唯一、首选、极致、巅峰、冠军、100%、百分百", "risk_level": "high", "suggestion": "请删除或改写国家级、最高级、最佳等绝对化用语，改为可验证的客观描述。"},
+    {"standard_code": "中华人民共和国广告法", "name": "广告法虚假或误导宣传风险", "rule_type": "ai", "field_key": "claims", "trigger": "根治、治愈、永久、无副作用、保证有效、完全无害、无任何风险、立刻见效、彻底解决", "risk_level": "high", "suggestion": "请删除无法证明或容易误导消费者的保证性、夸大性表述，保留有证据支持的客观信息。"},
+    {"standard_code": "中华人民共和国广告法", "name": "广告法疾病治疗功能风险", "rule_type": "ai", "field_key": "claims", "trigger": "治疗、治愈、预防疾病、抗癌、降血糖、降血压、消炎、止痛、修复肝肾、改善糖尿病、药用、处方", "risk_level": "high", "suggestion": "普通商品、食品、宠物食品或电子产品宣传不得涉及疾病治疗功能，建议删除医疗用语或改为非医疗化客观描述。"},
+    {"standard_code": "中华人民共和国广告法", "name": "广告法保健食品宣传风险", "rule_type": "ai", "field_key": "claims", "trigger": "保健食品、增强免疫、辅助降血脂、辅助降血糖、改善睡眠、替代药物、保障健康必需、无需就医", "risk_level": "high", "suggestion": "如涉及保健食品宣传，请核对批准/备案内容，不得涉及疾病预防治疗、替代药物或保障健康必需等表述。"},
+    {"standard_code": "中华人民共和国广告法", "name": "广告法专利认证数据引证风险", "rule_type": "ai", "field_key": "claims", "trigger": "专利、认证、检测报告、实验表明、临床证明、销量第一、市场占有率、用户满意度、权威推荐", "risk_level": "medium", "suggestion": "涉及专利、认证、数据、统计资料、调查结果等引证内容时，应核对真实、准确、有效并标明出处。"},
 ]
 
 
 SEED_RULES = {
-    "food": COMMON_FOOD_RULES,
-    "dairy": COMMON_FOOD_RULES + [
+    "food": COMMON_FOOD_RULES + COMMON_AD_RULES,
+    "dairy": COMMON_FOOD_RULES + COMMON_AD_RULES + [
         {"standard_code": "GB 25190-2010", "name": "乳制品类别和灭菌/发酵属性", "rule_type": "deterministic", "field_key": "product_type", "trigger": "灭菌乳/发酵乳/调制乳/乳粉/巴氏杀菌乳", "risk_level": "medium", "suggestion": "请明确乳制品类别，并与执行标准、配料和工艺属性保持一致。"},
         {"standard_code": "GB 19302-2010", "name": "乳蛋白/脂肪关键指标", "rule_type": "ai", "field_key": "nutrition", "trigger": "蛋白质、脂肪、非脂乳固体、乳酸菌", "risk_level": "medium", "suggestion": "建议检测乳蛋白、脂肪等关键指标，核对是否支撑标签声称。"},
         {"standard_code": "GB 2762-2022", "name": "乳制品污染物风险", "rule_type": "ai", "field_key": "product_type", "trigger": "生乳、乳粉、调制乳、发酵乳", "risk_level": "medium", "suggestion": "建议结合品类检测铅、黄曲霉毒素 M1 等安全指标。"},
     ],
-    "canned_food": COMMON_FOOD_RULES + [
+    "canned_food": COMMON_FOOD_RULES + COMMON_AD_RULES + [
         {"standard_code": "GB 7098-2015", "name": "罐头商业无菌风险", "rule_type": "ai", "field_key": "claims", "trigger": "即食、常温、罐头、商业无菌", "risk_level": "high", "suggestion": "罐头食品建议进行商业无菌项目确认，并核对杀菌工艺和贮存条件。"},
         {"standard_code": "GB 7098-2015", "name": "罐头品类与贮存条件", "rule_type": "deterministic", "field_key": "storage_condition", "trigger": "常温/阴凉/避光/开启后冷藏", "risk_level": "medium", "suggestion": "请根据罐头产品类型标注合理贮存条件和开启后食用提示。"},
     ],
-    "frozen_food": COMMON_FOOD_RULES + [
+    "frozen_food": COMMON_FOOD_RULES + COMMON_AD_RULES + [
         {"standard_code": "GB 19295-2021", "name": "速冻贮存条件", "rule_type": "deterministic", "field_key": "storage_condition", "trigger": "-18℃/冷冻/速冻", "risk_level": "high", "suggestion": "请明确标注速冻食品贮存条件，如 -18℃ 以下保存。"},
         {"standard_code": "GB 19295-2021", "name": "速冻微生物风险", "rule_type": "ai", "field_key": "product_type", "trigger": "速冻面米、速冻调制、肉馅、水产、即食", "risk_level": "medium", "suggestion": "建议按产品属性增加菌落总数、大肠菌群或致病菌项目。"},
     ],
-    "puffed_food": COMMON_FOOD_RULES + [
+    "puffed_food": COMMON_FOOD_RULES + COMMON_AD_RULES + [
         {"standard_code": "GB 17401-2014", "name": "膨化食品油脂氧化风险", "rule_type": "ai", "field_key": "product_name", "trigger": "膨化、油炸、薯片、锅巴、虾条、米果", "risk_level": "medium", "suggestion": "建议检测酸价和过氧化值，核对油脂氧化风险。"},
         {"standard_code": "GB 17401-2014", "name": "膨化食品微生物风险", "rule_type": "ai", "field_key": "product_type", "trigger": "直接入口、膨化、夹心、含肉、含乳", "risk_level": "medium", "suggestion": "建议结合产品配料和食用方式确认微生物检测项目。"},
     ],
-    "candy": COMMON_FOOD_RULES + [
+    "candy": COMMON_FOOD_RULES + COMMON_AD_RULES + [
         {"standard_code": "GB 2760-2024", "name": "糖果添加剂和甜味剂风险", "rule_type": "ai", "field_key": "ingredients", "trigger": "甜味剂、色素、防腐剂、山梨酸、苯甲酸、糖醇、糖精钠、甜蜜素、安赛蜜", "risk_level": "medium", "suggestion": "请核对食品添加剂使用范围和限量，必要时检测甜味剂/色素/防腐剂。"},
         {"standard_code": "GB 9678.2-2014", "name": "巧克力代可可脂标示风险", "rule_type": "ai", "field_key": "ingredients", "trigger": "代可可脂、可可脂、巧克力、类巧克力", "risk_level": "medium", "suggestion": "请核对可可脂、代可可脂相关名称和配料标示，避免品名误导。"},
     ],
-    "pet_food": [
+    "pet_food": COMMON_AD_RULES + [
         {"standard_code": "农业农村部公告第20号", "name": "宠物食品产品名称", "rule_type": "deterministic", "field_key": "product_name", "trigger": "产品名称", "risk_level": "medium", "suggestion": "请标注能反映宠物饲料属性的产品名称，并避免与适用宠物、产品类型不一致。"},
         {"standard_code": "农业农村部公告第20号", "name": "宠物食品适用对象声明", "rule_type": "deterministic", "field_key": "target_pet", "trigger": "犬/猫/全阶段/幼年/成年", "risk_level": "medium", "suggestion": "请明确标注适用宠物类型和生命阶段。"},
         {"standard_code": "农业农村部公告第20号", "name": "成分分析保证值", "rule_type": "deterministic", "field_key": "nutrition", "trigger": "粗蛋白、粗脂肪、粗纤维、粗灰分、水分", "risk_level": "high", "suggestion": "请标注宠物食品成分分析保证值，并核对检测数据。"},
@@ -150,7 +186,7 @@ SEED_RULES = {
         {"standard_code": "GB 13078-2017", "name": "宠物食品卫生指标风险", "rule_type": "ai", "field_key": "ingredients", "trigger": "鱼粉、肉粉、肝、谷物、花生、霉菌、重金属", "risk_level": "medium", "suggestion": "建议结合原料组成检测卫生指标、霉菌毒素或重金属。"},
         {"standard_code": "农业农村部公告第20号", "name": "宠物食品功效化宣传风险", "rule_type": "ai", "field_key": "claims", "trigger": "治疗、治愈、预防疾病、增强免疫、改善泪痕、药用、处方、特效", "risk_level": "high", "suggestion": "请删除或弱化疾病治疗、药用或缺乏依据的功效化描述。"},
     ],
-    "electronics": [
+    "electronics": COMMON_AD_RULES + [
         {"standard_code": "GB 4943.1-2022", "name": "电子产品名称必填", "rule_type": "deterministic", "field_key": "product_name", "trigger": "产品名称", "risk_level": "medium", "suggestion": "请在铭牌、包装或说明书中标注清晰的产品名称。"},
         {"standard_code": "GB 4943.1-2022", "name": "型号规格必填", "rule_type": "deterministic", "field_key": "model_no", "trigger": "型号", "risk_level": "medium", "suggestion": "请在铭牌或说明书中标注产品型号规格。"},
         {"standard_code": "GB 4943.1-2022", "name": "额定参数必填", "rule_type": "deterministic", "field_key": "rating", "trigger": "额定输入/输出/电压/电流/功率/频率", "risk_level": "high", "suggestion": "请标注额定电压、电流、频率或功率等关键安全参数。"},

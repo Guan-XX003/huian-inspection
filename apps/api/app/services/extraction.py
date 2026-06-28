@@ -64,6 +64,41 @@ def _clean_value(value: str) -> str:
 
 
 def _fill_food_fallbacks(fields: dict[str, str], text: str) -> None:
+    if not fields.get("claims"):
+        claim_keywords = [
+            "国家级",
+            "最高级",
+            "最佳",
+            "最优",
+            "最好",
+            "第一",
+            "唯一",
+            "100%",
+            "百分百",
+            "根治",
+            "治愈",
+            "治疗",
+            "预防疾病",
+            "抗癌",
+            "降血糖",
+            "降血压",
+            "无副作用",
+            "保证有效",
+            "增强免疫",
+            "替代药物",
+            "药用",
+            "处方",
+            "临床证明",
+            "权威推荐",
+            "销量第一",
+        ]
+        hit_lines = []
+        for line in text.splitlines():
+            clean_line = line.strip()
+            if clean_line and any(keyword in clean_line for keyword in claim_keywords):
+                hit_lines.append(clean_line[:120])
+        if hit_lines:
+            fields["claims"] = "；".join(hit_lines[:8])
     if not fields.get("license_no"):
         match = re.search(r"SC\d{14}", text)
         if match:

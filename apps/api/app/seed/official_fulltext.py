@@ -13,7 +13,22 @@ from app.services.document_parser import get_document_parser
 OFFICIAL_FULLTEXT_DIR = Path(__file__).resolve().parent / "builtin_official_pack"
 
 
+ADVERTISING_LAW_FULLTEXT_ITEMS = [
+    {
+        "industry_code": industry_code,
+        "code": "中华人民共和国广告法",
+        "name": "中华人民共和国广告法",
+        "version": "2021修正",
+        "effective_date": "2021-04-29",
+        "filename": "advertising_law_2021_beijing.html",
+        "source": "北京市市场监督管理局公开法规全文",
+    }
+    for industry_code in ["food", "dairy", "canned_food", "frozen_food", "puffed_food", "candy", "pet_food", "electronics"]
+]
+
+
 OFFICIAL_FULLTEXT_PACK: list[dict[str, Any]] = [
+    *ADVERTISING_LAW_FULLTEXT_ITEMS,
     {
         "industry_code": "food",
         "code": "GB 7718-2011",
