@@ -36,7 +36,7 @@ def test_audit_uses_model_extracted_fields(monkeypatch, tmp_path) -> None:
         assert all(item["passed"] for item in rule_results)
         assert all(item.get("vision_check_required") for item in rule_results)
         return {
-            "provider": "test/gpt-5.5",
+            "provider": "test/vision-model",
             "route": "vision+ocr",
             "supports_vision": True,
             "summary": "真实模型识别完成。",
@@ -101,7 +101,7 @@ def test_audit_uses_model_extracted_fields(monkeypatch, tmp_path) -> None:
     task = response.json()
     assert task["extracted_fields"]["product_name"] == "烧凉粉（方便凉粉）"
     assert task["extracted_fields"]["license_no"] == "SC10741018302531"
-    assert task["model_used"] == "test/gpt-5.5"
+    assert task["model_used"] == "test/vision-model"
     assert task["final_report"]["route"] == "vision+ocr"
     assert task["final_report"]["vision_primary"] is True
 

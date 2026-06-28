@@ -257,9 +257,8 @@ SEED_ITEMS = {
 
 SEED_MODELS = [
     {"provider": "deepseek", "model": "deepseek-chat", "supports_vision": False, "supports_json": True, "supports_tools": True, "default_for_text": True, "api_key_hint": "DEEPSEEK_API_KEY"},
-    {"provider": "tokenskingdom", "model": "gpt-5.5", "base_url": "https://api.tokenskingdom.com/v1", "supports_vision": True, "supports_json": True, "supports_tools": False, "default_for_vision": True, "api_key_hint": "TOKENSKINGDOM_API_KEY"},
     {"provider": "qwen", "model": "qwen-plus", "supports_vision": False, "supports_json": True, "supports_tools": True, "api_key_hint": "DASHSCOPE_API_KEY"},
-    {"provider": "openai", "model": "gpt-4.1", "supports_vision": True, "supports_json": True, "supports_tools": True, "api_key_hint": "OPENAI_API_KEY"},
+    {"provider": "openai", "model": "gpt-4.1", "supports_vision": True, "supports_json": True, "supports_tools": True, "default_for_vision": True, "api_key_hint": "OPENAI_API_KEY"},
     {"provider": "claude", "model": "claude-sonnet-4", "supports_vision": True, "supports_json": True, "supports_tools": True, "api_key_hint": "ANTHROPIC_API_KEY"},
     {"provider": "doubao", "model": "doubao-vision-pro", "supports_vision": True, "supports_json": True, "supports_tools": False, "api_key_hint": "ARK_API_KEY"},
 ]

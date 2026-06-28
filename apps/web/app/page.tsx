@@ -115,7 +115,7 @@ const MERGED_IMAGE_LABEL_HEIGHT = 48;
 const providerPresets = [
   {
     provider: "OpenAI",
-    model: "gpt-5.5",
+    model: "gpt-4.1",
     base_url: "https://api.openai.com/v1",
     supports_vision: true,
     supports_json: true,
@@ -528,6 +528,7 @@ export default function Home() {
   const [sessionForm, setSessionForm] = useState({ title: "", group: "默认分组" });
   const [exportOpen, setExportOpen] = useState(false);
   const [resultCollapsed, setResultCollapsed] = useState(false);
+  const [compactResultOpen, setCompactResultOpen] = useState(false);
   const [expandedFindingId, setExpandedFindingId] = useState<string>("");
   const [riskOverrides, setRiskOverrides] = useState<Record<string, RiskOverride>>({});
   const [draftSuggestion, setDraftSuggestion] = useState("");
@@ -547,7 +548,7 @@ export default function Home() {
   });
   const [modelForm, setModelForm] = useState<ModelForm>({
     provider: "OpenAI",
-    model: "gpt-5.5",
+    model: "gpt-4.1",
     base_url: "https://api.openai.com/v1",
     api_key_secret: "",
     api_key_hint: "",
@@ -740,6 +741,7 @@ export default function Home() {
     setExpandedFindingId("");
     setSteps(initialSteps);
     setResultCollapsed(false);
+    setCompactResultOpen(false);
     setToast("已创建新的审核会话");
   }
 
@@ -817,6 +819,7 @@ export default function Home() {
     setToast("");
     resetSteps();
     setResultCollapsed(false);
+    setCompactResultOpen(false);
     try {
       const inputFile = selectedFiles.length ? await prepareAuditUploadFile(selectedFiles) : makeTextFile();
       let fileId = reusable?.file_id || uploadedFile?.id || "";
@@ -883,6 +886,7 @@ export default function Home() {
     setRiskOverrides({});
     setExpandedFindingId(getFindings(task)[0]?.finding_id || "");
     setResultCollapsed(false);
+    setCompactResultOpen(false);
   }
 
   function openSessionEditor(task: AuditTask) {
@@ -1483,7 +1487,7 @@ export default function Home() {
         </div>
       </aside>
 
-      <section className={`agent-main ${resultCollapsed ? "result-hidden" : ""}`}>
+      <section className={`agent-main ${resultCollapsed ? "result-hidden" : ""} ${compactResultOpen ? "compact-result-open" : ""}`}>
         <div className="workspace">
           <header className="workspace-topbar">
             <div>
@@ -1504,6 +1508,17 @@ export default function Home() {
                   显示结果
                 </button>
               ) : null}
+              <button
+                className="ghost-button compact-result-trigger"
+                onClick={() => {
+                  setResultCollapsed(false);
+                  setCompactResultOpen(true);
+                }}
+                disabled={!currentTask}
+              >
+                <Eye size={15} />
+                审核结果
+              </button>
               <button className="primary-button" onClick={() => setExportOpen(true)} disabled={!currentTask}>
                 <Download size={15} />
                 导出报告
@@ -1682,7 +1697,17 @@ export default function Home() {
                     : "等待审核"}
                 </div>
               </div>
-              <button className="icon-button" onClick={() => setResultCollapsed(true)} aria-label="收起结果">
+              <button
+                className="icon-button"
+                onClick={() => {
+                  if (compactResultOpen) {
+                    setCompactResultOpen(false);
+                    return;
+                  }
+                  setResultCollapsed(true);
+                }}
+                aria-label="收起结果"
+              >
                 <X size={15} />
               </button>
             </div>

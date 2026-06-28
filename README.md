@@ -49,11 +49,11 @@ pnpm desktop:dev
 
 ## 接入真实模型
 
-后台“模型配置”支持 OpenAI 兼容接口。以 TokensKingdom 的 `gpt-5.5` 为例：
+后台“模型配置”支持 OpenAI 兼容接口。以 OpenAI 兼容服务为例：
 
-- Base URL：`https://api.tokenskingdom.com/v1`
-- 模型 ID：`gpt-5.5`
-- 密钥变量名：`TOKENSKINGDOM_API_KEY`
+- Base URL：`https://api.openai.com/v1`
+- 模型 ID：`gpt-4.1`
+- 密钥变量名：`OPENAI_API_KEY`
 - 能力：勾选“支持视觉”和“支持 JSON”
 
 真实密钥放到 `apps/api/.env` 或启动环境变量里，不要填进前端列表。配置了视觉模型时，图片会以“图片 + OCR 文本”发送；配置 DeepSeek 等无视觉模型时，系统会只发送 OCR 后的结构化文本。

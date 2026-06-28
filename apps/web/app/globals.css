@@ -387,6 +387,7 @@ button:disabled {
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 384px;
+  overflow: hidden;
 }
 
 .agent-main.result-hidden {
@@ -426,7 +427,14 @@ button:disabled {
 .top-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
+  flex: 0 0 auto;
+}
+
+.compact-result-trigger {
+  display: none;
 }
 
 .chat-area {
@@ -1735,17 +1743,28 @@ button.message:hover {
 
   .agent-main {
     grid-template-columns: minmax(0, 1fr);
+    height: 100vh;
   }
 
   .result-panel {
+    display: none;
+  }
+
+  .agent-main.compact-result-open .result-panel {
     position: fixed;
-    inset: 70px 18px 18px auto;
-    width: min(380px, calc(100vw - 36px));
-    z-index: 30;
+    inset: 18px;
+    z-index: 40;
+    display: grid;
+    width: auto;
+    height: auto;
     box-shadow: var(--shadow);
     border: 1px solid var(--line);
     border-radius: 8px;
     overflow: hidden;
+  }
+
+  .compact-result-trigger {
+    display: inline-flex;
   }
 
   .run-options {
@@ -1764,6 +1783,11 @@ button.message:hover {
   }
 
   .workspace {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .agent-main {
     height: auto;
     min-height: 100vh;
   }

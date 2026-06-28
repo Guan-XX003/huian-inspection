@@ -16,6 +16,30 @@ if (!existsSync(python)) {
   process.exit(1);
 }
 
+const seedDatabasePath = path.join(apiDir, "app", "seed", "inspection_ai_seed.db");
+
+if (!existsSync(seedDatabasePath)) {
+  const seedScript = [
+    "from app.database import init_db, SessionLocal",
+    "from app.seed import seed_database",
+    "init_db()",
+    "with SessionLocal() as db:",
+    "    seed_database(db)",
+  ].join("\n");
+  const seedResult = spawnSync(python, ["-c", seedScript], {
+    cwd: apiDir,
+    stdio: "inherit",
+    shell: false,
+    env: {
+      ...process.env,
+      DATABASE_URL: "sqlite:///app/seed/inspection_ai_seed.db",
+    },
+  });
+  if (seedResult.status !== 0) {
+    process.exit(seedResult.status ?? 1);
+  }
+}
+
 const addData = (source, target) => `${source}${separator}${target}`;
 const args = [
   "-m",

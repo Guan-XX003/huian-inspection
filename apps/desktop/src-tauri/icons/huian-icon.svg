@@ -1,29 +1,31 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="176" y1="116" x2="858" y2="902" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#071825"/>
-      <stop offset="0.56" stop-color="#0D3D42"/>
+    <linearGradient id="bg" x1="172" y1="112" x2="852" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07131F"/>
+      <stop offset="0.54" stop-color="#0B3B43"/>
       <stop offset="1" stop-color="#0F766E"/>
     </linearGradient>
-    <linearGradient id="shield" x1="289" y1="258" x2="741" y2="780" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#F8FAFC"/>
-      <stop offset="1" stop-color="#BFEFE7"/>
+    <linearGradient id="plate" x1="310" y1="222" x2="726" y2="812" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FFFC"/>
+      <stop offset="1" stop-color="#C7F5EC"/>
     </linearGradient>
-    <linearGradient id="cut" x1="392" y1="340" x2="657" y2="628" gradientUnits="userSpaceOnUse">
+    <linearGradient id="inner" x1="358" y1="292" x2="668" y2="730" gradientUnits="userSpaceOnUse">
       <stop stop-color="#0F766E"/>
-      <stop offset="1" stop-color="#071825"/>
+      <stop offset="1" stop-color="#07131F"/>
     </linearGradient>
-    <filter id="shadow" x="152" y="146" width="720" height="756" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#031012" flood-opacity="0.28"/>
+    <filter id="plateShadow" x="220" y="164" width="584" height="720" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="30" stdDeviation="28" flood-color="#021114" flood-opacity="0.3"/>
     </filter>
   </defs>
-  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#bg)"/>
-  <path opacity="0.16" d="M213 264C310 173 458 145 585 184C700 219 779 304 824 410C871 523 850 656 778 753C706 851 581 895 462 875C337 854 241 766 200 650C157 529 119 353 213 264Z" fill="#E7FFF9"/>
-  <g filter="url(#shadow)">
-    <path d="M512 184L750 278V453C750 614 654 758 512 826C370 758 274 614 274 453V278L512 184Z" fill="url(#shield)"/>
+  <rect x="64" y="64" width="896" height="896" rx="196" fill="url(#bg)"/>
+  <path d="M186 291C260 188 394 139 520 154C650 170 761 249 820 366C879 483 865 626 786 731C707 837 575 890 444 866C313 842 205 744 168 616C132 492 112 394 186 291Z" fill="#E6FFF7" opacity="0.12"/>
+  <path d="M228 208H796" stroke="#E7FFF8" stroke-width="18" stroke-linecap="round" opacity="0.16"/>
+  <g filter="url(#plateShadow)">
+    <path d="M512 168L750 264V454C750 612 655 756 512 828C369 756 274 612 274 454V264L512 168Z" fill="url(#plate)"/>
   </g>
-  <path d="M512 260L675 325V456C675 574 609 682 512 739C415 682 349 574 349 456V325L512 260Z" fill="url(#cut)"/>
-  <text x="512" y="640" text-anchor="middle" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="330" font-weight="850" fill="#F8FAFC">H</text>
-  <path d="M640 332L700 356V446C700 569 633 696 512 765" stroke="#DFFCF6" stroke-width="24" stroke-linecap="round" opacity="0.72"/>
-  <path d="M330 292L512 220L692 292" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" opacity="0.4"/>
+  <path d="M512 244L676 310V456C676 574 612 684 512 744C412 684 348 574 348 456V310L512 244Z" fill="url(#inner)"/>
+  <path d="M424 354C424 341.85 433.85 332 446 332H487C499.15 332 509 341.85 509 354V458H515V354C515 341.85 524.85 332 537 332H578C590.15 332 600 341.85 600 354V670C600 682.15 590.15 692 578 692H537C524.85 692 515 682.15 515 670V548H509V670C509 682.15 499.15 692 487 692H446C433.85 692 424 682.15 424 670V354Z" fill="#F8FFFC"/>
+  <rect x="466" y="458" width="92" height="90" rx="22" fill="#F8FFFC"/>
+  <path d="M632 322L694 347V450C694 590 618 704 512 770" stroke="#DDFBF4" stroke-width="22" stroke-linecap="round" opacity="0.62"/>
+  <path d="M344 300L512 232L680 300" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.36"/>
 </svg>
