@@ -490,6 +490,22 @@ button:disabled {
   padding: 17px 18px;
 }
 
+button.message {
+  width: min(760px, 100%);
+  color: var(--text);
+  text-align: left;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+button.message:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.08);
+  transform: translateY(-1px);
+}
+
 .message.user-message {
   margin-left: auto;
   max-width: 640px;
@@ -498,15 +514,36 @@ button:disabled {
 }
 
 .message-title {
+  display: block;
   font-size: 15px;
   font-weight: 780;
   margin-bottom: 8px;
 }
 
 .message-text {
+  display: block;
   color: var(--muted);
   font-size: 14px;
   line-height: 1.65;
+}
+
+.result-message {
+  display: grid;
+  gap: 8px;
+}
+
+.result-message.active {
+  border-color: #99f6e4;
+  background: #f0fdfa;
+}
+
+.result-message-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .file-chip {

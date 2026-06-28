@@ -193,11 +193,14 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
         file_id=file.id,
         customer_name=payload.customer_name,
         document_type=payload.document_type,
+        conversation_id=payload.conversation_id or "",
         session_group=payload.document_type or "默认分组",
         status=ReviewStatus.pending.value,
     )
     db.add(task)
     db.flush()
+    if not task.conversation_id:
+        task.conversation_id = task.id
 
     template = db.scalar(select(FieldTemplate).where(FieldTemplate.industry_id == industry.id))
     field_keys = loads(template.fields_json, []) if template else []

@@ -192,6 +192,7 @@ class AuditTaskCreate(BaseModel):
     customer_name: str = ""
     document_type: str = "产品标签"
     model_provider_id: Optional[str] = None
+    conversation_id: Optional[str] = None
 
 
 class AuditTaskUpdate(BaseModel):
@@ -205,6 +206,7 @@ class AuditTaskRead(BaseModel):
     file_id: str
     customer_name: str
     document_type: str
+    conversation_id: str = ""
     session_title: str = ""
     session_group: str = "默认分组"
     session_archived: bool = False

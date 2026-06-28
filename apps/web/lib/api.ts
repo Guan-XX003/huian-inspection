@@ -153,6 +153,7 @@ export type AuditTask = {
   file_id: string;
   customer_name: string;
   document_type: string;
+  conversation_id: string;
   session_title: string;
   session_group: string;
   session_archived: boolean;
@@ -293,6 +294,7 @@ export const api = {
     customer_name: string;
     document_type: string;
     model_provider_id?: string;
+    conversation_id?: string;
   }) =>
     request<AuditTask>("/api/audit/tasks", {
       method: "POST",

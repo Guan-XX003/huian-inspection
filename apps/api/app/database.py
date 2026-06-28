@@ -55,6 +55,9 @@ def _apply_lightweight_migrations() -> None:
             connection.execute(text("ALTER TABLE model_providers ADD COLUMN api_key_secret TEXT DEFAULT ''"))
         if "audit_tasks" in table_names:
             audit_columns = {column["name"] for column in inspector.get_columns("audit_tasks")}
+            if "conversation_id" not in audit_columns:
+                connection.execute(text("ALTER TABLE audit_tasks ADD COLUMN conversation_id VARCHAR(32) DEFAULT ''"))
+                connection.execute(text("UPDATE audit_tasks SET conversation_id = id WHERE conversation_id = '' OR conversation_id IS NULL"))
             if "session_title" not in audit_columns:
                 connection.execute(text("ALTER TABLE audit_tasks ADD COLUMN session_title VARCHAR(160) DEFAULT ''"))
             if "session_group" not in audit_columns:

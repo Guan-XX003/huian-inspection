@@ -60,6 +60,14 @@ type RiskOverride = {
   status?: "pending" | "confirmed" | "dismissed";
 };
 
+type AuditConversation = {
+  id: string;
+  title: string;
+  group: string;
+  latestTask: AuditTask;
+  tasks: AuditTask[];
+};
+
 type SaveFilter = {
   name: string;
   extensions: string[];
@@ -194,6 +202,18 @@ function taskTitle(task?: AuditTask | null) {
   if (name) return String(name);
   const route = task.final_report?.industry || task.document_type || "标签审核";
   return `${route} ${task.id.slice(0, 8)}`;
+}
+
+function conversationIdOf(task?: AuditTask | null) {
+  return task?.conversation_id || task?.id || "";
+}
+
+function compareTaskTimeAsc(a: AuditTask, b: AuditTask) {
+  return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+}
+
+function compareTaskTimeDesc(a: AuditTask, b: AuditTask) {
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
 
 function getFindings(task?: AuditTask | null): AuditFinding[] {
@@ -368,6 +388,7 @@ export default function Home() {
   const [testingToolId, setTestingToolId] = useState("");
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [currentTask, setCurrentTask] = useState<AuditTask | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
@@ -430,34 +451,78 @@ export default function Home() {
     () => detectionItems.find((item) => item.id === selectedQuoteItemId) || null,
     [detectionItems, selectedQuoteItemId],
   );
-  const filteredTasks = useMemo(() => {
+  const conversations = useMemo<AuditConversation[]>(() => {
+    const map = new Map<string, AuditTask[]>();
+    for (const task of tasks) {
+      const id = conversationIdOf(task);
+      if (!id) continue;
+      map.set(id, [...(map.get(id) || []), task]);
+    }
+    return Array.from(map.entries())
+      .map(([id, items]) => {
+        const sortedDesc = [...items].sort(compareTaskTimeDesc);
+        const latestTask = sortedDesc[0];
+        return {
+          id,
+          latestTask,
+          tasks: [...items].sort(compareTaskTimeAsc),
+          title: taskTitle(latestTask),
+          group: latestTask.session_group || latestTask.final_report?.industry || latestTask.document_type || "默认分组",
+        };
+      })
+      .sort((a, b) => compareTaskTimeDesc(a.latestTask, b.latestTask));
+  }, [tasks]);
+  const filteredConversations = useMemo(() => {
     const keyword = filter.trim().toLowerCase();
-    if (!keyword) return tasks;
-    return tasks.filter((task) => {
-      const text = `${taskTitle(task)} ${task.session_group || ""} ${task.final_report?.industry || ""} ${statusLabel(task)}`.toLowerCase();
+    if (!keyword) return conversations;
+    return conversations.filter((conversation) => {
+      const text = [
+        conversation.title,
+        conversation.group,
+        conversation.latestTask.final_report?.industry || "",
+        statusLabel(conversation.latestTask),
+        `${conversation.tasks.length} 次审核`,
+      ].join(" ").toLowerCase();
       return text.includes(keyword);
     });
-  }, [filter, tasks]);
-  const groupedTasks = useMemo(() => {
-    const groups = new Map<string, AuditTask[]>();
-    for (const task of filteredTasks) {
-      const group = task.session_group || task.final_report?.industry || task.document_type || "默认分组";
-      groups.set(group, [...(groups.get(group) || []), task]);
+  }, [conversations, filter]);
+  const groupedConversations = useMemo(() => {
+    const groups = new Map<string, AuditConversation[]>();
+    for (const conversation of filteredConversations) {
+      groups.set(conversation.group, [...(groups.get(conversation.group) || []), conversation]);
     }
     return Array.from(groups.entries());
-  }, [filteredTasks]);
+  }, [filteredConversations]);
   const sessionGroups = useMemo(() => {
     const groups = new Set<string>();
-    for (const task of tasks) {
-      const group = (task.session_group || task.final_report?.industry || task.document_type || "默认分组").trim();
+    for (const conversation of conversations) {
+      const group = conversation.group.trim();
       if (group) groups.add(group);
     }
     groups.add("默认分组");
     return Array.from(groups).sort((a, b) => a.localeCompare(b, "zh-CN"));
-  }, [tasks]);
+  }, [conversations]);
   const selectedGroupExists = useMemo(
     () => sessionGroups.includes(sessionForm.group.trim()),
     [sessionForm.group, sessionGroups],
+  );
+  const currentConversationTasks = useMemo(() => {
+    const id = activeConversationId || conversationIdOf(currentTask);
+    if (!id) return currentTask ? [currentTask] : [];
+    const byId = new Map<string, AuditTask>();
+    for (const task of tasks) {
+      if (conversationIdOf(task) === id) byId.set(task.id, task);
+    }
+    if (currentTask && conversationIdOf(currentTask) === id) byId.set(currentTask.id, currentTask);
+    return Array.from(byId.values()).sort(compareTaskTimeAsc);
+  }, [activeConversationId, currentTask, tasks]);
+  const currentConversationTitle = useMemo(() => {
+    const latestTask = currentConversationTasks[currentConversationTasks.length - 1] || currentTask;
+    return latestTask ? taskTitle(latestTask) : "新标签审核";
+  }, [currentConversationTasks, currentTask]);
+  const currentResultIndex = useMemo(
+    () => currentConversationTasks.findIndex((task) => task.id === currentTask?.id) + 1,
+    [currentConversationTasks, currentTask],
   );
 
   useEffect(() => {
@@ -516,7 +581,10 @@ export default function Home() {
         setModelForm(nextModelForm);
         setSavedModelForm(nextModelForm);
       }
-      if (taskList[0]) setCurrentTask(taskList[0]);
+      if (taskList[0]) {
+        setCurrentTask(taskList[0]);
+        setActiveConversationId(conversationIdOf(taskList[0]));
+      }
     } catch (caught) {
       setError(humanizeRequestError(caught, "初始化失败，请确认本地服务已启动。"));
     }
@@ -524,6 +592,7 @@ export default function Home() {
 
   function resetForNewAudit() {
     setCurrentTask(null);
+    setActiveConversationId("");
     setSelectedFile(null);
     setUploadedFile(null);
     setRequestSubmitted(false);
@@ -552,9 +621,7 @@ export default function Home() {
     if (!file) return;
     setSelectedFile(file);
     setUploadedFile(null);
-    setCurrentTask(null);
     setRequestSubmitted(false);
-    setRiskOverrides({});
     setSteps(initialSteps);
     setToast(`已选择 ${file.name}`);
   }
@@ -578,6 +645,7 @@ export default function Home() {
   async function runAudit(options?: { reuseTask?: AuditTask }) {
     const reusable = options?.reuseTask;
     const inputFile = selectedFile || makeTextFile();
+    const conversationId = conversationIdOf(reusable) || activeConversationId || conversationIdOf(currentTask);
     if (!inputFile && !reusable) {
       setError("请先上传标签图片、PDF、Word，或粘贴标签文本。");
       return;
@@ -609,15 +677,20 @@ export default function Home() {
         customer_name: customerName,
         document_type: documentType,
         model_provider_id: selectedModelId || "local",
+        conversation_id: conversationId || undefined,
       });
       setStepStatus("ocr", "done");
       setStepStatus("route", "done");
       setStepStatus("rules", "done");
       setStepStatus("review", "done");
       setCurrentTask(created);
+      setActiveConversationId(conversationIdOf(created));
       setRiskOverrides({});
       const nextTasks = await api.auditTasks();
       setTasks(nextTasks);
+      setSelectedFile(null);
+      setUploadedFile(null);
+      setMessage("");
       setExpandedFindingId(getFindings(created)[0]?.finding_id || "");
       setToast("审核完成，已生成结构化结果");
     } catch (caught) {
@@ -641,6 +714,7 @@ export default function Home() {
 
   function selectTask(task: AuditTask) {
     setCurrentTask(task);
+    setActiveConversationId(conversationIdOf(task));
     setSelectedFile(null);
     setUploadedFile(null);
     setRequestSubmitted(true);
@@ -662,12 +736,19 @@ export default function Home() {
     if (!editingSession) return;
     setError("");
     try {
-      const updated = await api.updateAuditTask(editingSession.id, {
-        session_title: sessionForm.title.trim(),
-        session_group: sessionForm.group.trim() || "默认分组",
-      });
-      setTasks((current) => current.map((task) => (task.id === updated.id ? updated : task)));
-      if (currentTask?.id === updated.id) setCurrentTask(updated);
+      const conversationId = conversationIdOf(editingSession);
+      const relatedTasks = tasks.filter((task) => conversationIdOf(task) === conversationId);
+      const updatedTasks = await Promise.all(
+        relatedTasks.map((task) =>
+          api.updateAuditTask(task.id, {
+            session_title: sessionForm.title.trim(),
+            session_group: sessionForm.group.trim() || "默认分组",
+          }),
+        ),
+      );
+      const updatedById = new Map(updatedTasks.map((task) => [task.id, task]));
+      setTasks((current) => current.map((task) => updatedById.get(task.id) || task));
+      if (currentTask && updatedById.has(currentTask.id)) setCurrentTask(updatedById.get(currentTask.id) || currentTask);
       setSessionEditorOpen(false);
       setEditingSession(null);
       setToast("会话信息已更新");
@@ -678,9 +759,13 @@ export default function Home() {
 
   async function deleteSession(task: AuditTask) {
     setError("");
-    setTasks((current) => current.filter((item) => item.id !== task.id));
-    if (currentTask?.id === task.id) {
+    const conversationId = conversationIdOf(task);
+    const relatedTasks = tasks.filter((item) => conversationIdOf(item) === conversationId);
+    const relatedIds = new Set(relatedTasks.map((item) => item.id));
+    setTasks((current) => current.filter((item) => !relatedIds.has(item.id)));
+    if (currentTask && relatedIds.has(currentTask.id)) {
       setCurrentTask(null);
+      setActiveConversationId("");
       setRiskOverrides({});
       setExpandedFindingId("");
     }
@@ -689,7 +774,7 @@ export default function Home() {
       setEditingSession(null);
     }
     try {
-      await api.deleteAuditTask(task.id);
+      await Promise.all(relatedTasks.map((item) => api.deleteAuditTask(item.id)));
       setToast("会话已删除");
     } catch (caught) {
       const refreshed = await api.auditTasks();
@@ -1112,26 +1197,29 @@ export default function Home() {
 
         <div className="sidebar-section-title">历史会话</div>
         <div className="session-list">
-          {groupedTasks.length ? (
-            groupedTasks.map(([group, groupTasks]) => (
+          {groupedConversations.length ? (
+            groupedConversations.map(([group, groupConversations]) => (
               <div className="session-group" key={group}>
                 <div className="session-group-title">{group}</div>
-                {groupTasks.map((task) => (
-                  <div key={task.id} className={`session-row ${currentTask?.id === task.id ? "active" : ""}`}>
-                    <button className="session-main" onClick={() => selectTask(task)}>
+                {groupConversations.map((conversation) => (
+                  <div key={conversation.id} className={`session-row ${activeConversationId === conversation.id ? "active" : ""}`}>
+                    <button className="session-main" onClick={() => selectTask(conversation.latestTask)}>
                       <span className="session-title-line">
-                        <strong>{taskTitle(task)}</strong>
-                        <span className={`pill ${task.status === "needs_review" ? "orange" : "green"}`}>{statusLabel(task)}</span>
+                        <strong>{conversation.title}</strong>
+                        <span className={`pill ${conversation.latestTask.status === "needs_review" ? "orange" : "green"}`}>
+                          {statusLabel(conversation.latestTask)}
+                        </span>
                       </span>
                       <span className="session-meta">
-                        {task.final_report?.industry || task.document_type} · {formatDate(task.created_at)}
+                        {conversation.latestTask.final_report?.industry || conversation.latestTask.document_type} · {conversation.tasks.length} 次审核 ·{" "}
+                        {formatDate(conversation.latestTask.created_at)}
                       </span>
                     </button>
                     <div className="session-actions">
-                      <button className="icon-button" onClick={() => openSessionEditor(task)} aria-label="编辑会话">
+                      <button className="icon-button" onClick={() => openSessionEditor(conversation.latestTask)} aria-label="编辑会话">
                         <Pencil size={13} />
                       </button>
-                      <button className="icon-button" onClick={() => void deleteSession(task)} aria-label="删除会话">
+                      <button className="icon-button" onClick={() => void deleteSession(conversation.latestTask)} aria-label="删除会话">
                         <X size={13} />
                       </button>
                     </div>
@@ -1170,7 +1258,7 @@ export default function Home() {
         <div className="workspace">
           <header className="workspace-topbar">
             <div>
-              <div className="workspace-title">{currentTask ? taskTitle(currentTask) : "新标签审核"}</div>
+              <div className="workspace-title">{currentTask ? currentConversationTitle : "新标签审核"}</div>
               <div className="workspace-subtitle">
                 {selectedIndustryName} · 本地法规 {selectedIndustryStandardCount} 条 · {health?.model_gateway || "等待连接"} ·{" "}
                 {selectedModelId === "local" ? "本地规则引擎" : activeModel?.provider || "未选择模型"}
@@ -1256,14 +1344,29 @@ export default function Home() {
                   </div>
                 </div>
 
-                {currentTask && (
-                  <div className="message agent-message">
-                    <div className="message-title">审核结论：{getConclusion(findings, riskOverrides)}</div>
-                    <div className="message-text">
-                      已识别 {findings.length} 项风险或提示。你可以在右侧展开风险、修改建议、调整等级、确认状态，并导出报告。
-                    </div>
-                  </div>
-                )}
+                {currentConversationTasks.map((task, index) => {
+                  const taskFindings = getFindings(task);
+                  const isSelected = currentTask?.id === task.id;
+                  return (
+                    <button
+                      key={task.id}
+                      className={`message agent-message result-message ${isSelected ? "active" : ""}`}
+                      onClick={() => selectTask(task)}
+                    >
+                      <span className="message-title">
+                        第 {index + 1} 次审核：{getConclusion(taskFindings, isSelected ? riskOverrides : {})}
+                      </span>
+                      <span className="message-text">
+                        {formatDate(task.completed_at || task.created_at)} · 已识别 {taskFindings.length} 项风险或提示。点击查看这一版的完整结果、法规依据和导出报告。
+                      </span>
+                      <span className="result-message-foot">
+                        <span>{task.final_report?.industry || task.document_type || "自动识别品类"}</span>
+                        {task.final_report?.vision_primary ? <em className="pill teal">视觉优先识别</em> : null}
+                        <em className={`pill ${task.status === "needs_review" ? "orange" : "green"}`}>{statusLabel(task)}</em>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1295,7 +1398,7 @@ export default function Home() {
                 <input value={documentType} onChange={(event) => setDocumentType(event.target.value)} placeholder="例如：产品标签" />
               </label>
             </div>
-            {selectedFile && !requestSubmitted ? (
+            {selectedFile && !isRunning ? (
               <div className="pending-attachment">
                 <FileText size={20} />
                 <div>
@@ -1330,7 +1433,11 @@ export default function Home() {
             <div className="result-head">
               <div>
                 <div className="panel-title">审核结果</div>
-                <div className="panel-subtitle">{currentTask ? `结果版本 · ${formatDate(currentTask.completed_at || currentTask.created_at)}` : "等待审核"}</div>
+                <div className="panel-subtitle">
+                  {currentTask
+                    ? `第 ${currentResultIndex || 1} 次审核 · ${formatDate(currentTask.completed_at || currentTask.created_at)}`
+                    : "等待审核"}
+                </div>
               </div>
               <button className="icon-button" onClick={() => setResultCollapsed(true)} aria-label="收起结果">
                 <X size={15} />

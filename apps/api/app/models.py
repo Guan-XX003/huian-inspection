@@ -189,6 +189,7 @@ class AuditTask(Base):
     file_id: Mapped[str] = mapped_column(ForeignKey("uploaded_files.id"))
     customer_name: Mapped[str] = mapped_column(String(120), default="")
     document_type: Mapped[str] = mapped_column(String(80), default="产品标签")
+    conversation_id: Mapped[str] = mapped_column(String(32), index=True, default=new_id)
     session_title: Mapped[str] = mapped_column(String(160), default="")
     session_group: Mapped[str] = mapped_column(String(80), default="默认分组")
     session_archived: Mapped[bool] = mapped_column(Boolean, default=False)
