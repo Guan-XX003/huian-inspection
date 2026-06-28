@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+*.db
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+
+# Rust / Tauri
+target/
+apps/desktop/src-tauri/target/
+apps/api/build/
+apps/api/dist/
+apps/api/huian-api.spec
+
+# Local files
+.env
+audit-*.pdf
+app/storage/uploads/*
+app/reports/*
+apps/api/app/storage/uploads/*
+apps/api/app/reports/*
+!app/storage/uploads/.gitkeep
+!app/reports/.gitkeep
+!apps/api/app/storage/uploads/.gitkeep
+!apps/api/app/reports/.gitkeep

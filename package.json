@@ -1,0 +1,19 @@
+{
+  "name": "huian-inspection",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm desktop:app",
+    "desktop:app": "node scripts/desktop-dev.mjs",
+    "web:dev": "pnpm --dir apps/web dev",
+    "web:build": "pnpm --dir apps/web build",
+    "web:lint": "pnpm --dir apps/web lint",
+    "api:dev": "cd apps/api && .venv/bin/python -m uvicorn app.main:app --reload --port 8000",
+    "api:test": "cd apps/api && .venv/bin/python -m pytest",
+    "api:build-sidecar": "node scripts/build-api-sidecar.mjs",
+    "setup:windows": "powershell -ExecutionPolicy Bypass -File scripts/windows-setup.ps1",
+    "desktop:dev": "pnpm --dir apps/desktop tauri dev",
+    "desktop:build": "pnpm --dir apps/desktop tauri build",
+    "package:mac": "pnpm api:build-sidecar && pnpm desktop:build",
+    "package:windows": "pnpm api:build-sidecar && pnpm desktop:build"
+  }
+}

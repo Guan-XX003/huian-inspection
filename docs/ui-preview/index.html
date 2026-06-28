@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>汇安检测 UI 预览</title>
+    <style>
+      :root {
+        --bg: #f7f7f5;
+        --panel: #ffffff;
+        --panel-soft: #fbfbfa;
+        --line: #e5e7eb;
+        --line-strong: #d1d5db;
+        --text: #202123;
+        --muted: #6b7280;
+        --faint: #9ca3af;
+        --primary: #111827;
+        --primary-soft: #f0f2f4;
+        --teal: #0f766e;
+        --teal-soft: #e8f4f2;
+        --red: #dc2626;
+        --red-soft: #fee2e2;
+        --orange: #d97706;
+        --orange-soft: #fef3c7;
+        --blue: #2563eb;
+        --blue-soft: #dbeafe;
+        --green: #059669;
+        --green-soft: #d1fae5;
+        --purple: #7c3aed;
+        --purple-soft: #ede9fe;
+        --shadow: 0 24px 70px rgba(17, 24, 39, 0.13);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        width: 1440px;
+        height: 1024px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        letter-spacing: 0;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+
+      .screen {
+        display: none;
+        width: 1440px;
+        height: 1024px;
+      }
+
+      body[data-screen="workspace"] .workspace-screen,
+      body[data-screen="settings"] .settings-screen,
+      body[data-screen="report"] .report-screen {
+        display: grid;
+      }
+
+      .app {
+        grid-template-columns: 264px minmax(0, 1fr) 384px;
+        background: var(--bg);
+      }
+
+      .sidebar {
+        border-right: 1px solid var(--line);
+        background: #ffffff;
+        padding: 18px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 4px 6px 12px;
+      }
+
+      .brand-mark {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        color: #ffffff;
+        font-weight: 760;
+        background: linear-gradient(135deg, #111827, #0f766e);
+      }
+
+      .brand-title {
+        font-size: 15px;
+        font-weight: 780;
+      }
+
+      .brand-subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+
+      .new-button,
+      .primary-button,
+      .ghost-button,
+      .icon-button,
+      .subtle-button {
+        border: 0;
+        border-radius: 8px;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 14px;
+        font-size: 14px;
+        font-weight: 680;
+      }
+
+      .new-button,
+      .primary-button {
+        background: var(--primary);
+        color: #ffffff;
+      }
+
+      .ghost-button {
+        background: #ffffff;
+        color: var(--text);
+        border: 1px solid var(--line);
+      }
+
+      .subtle-button {
+        background: var(--primary-soft);
+        color: var(--text);
+      }
+
+      .icon-button {
+        width: 36px;
+        padding: 0;
+        background: transparent;
+        border: 1px solid var(--line);
+        color: var(--muted);
+      }
+
+      .section-label {
+        margin: 12px 8px 6px;
+        font-size: 12px;
+        color: var(--faint);
+        font-weight: 720;
+      }
+
+      .session-list {
+        display: grid;
+        gap: 5px;
+      }
+
+      .session-row {
+        border-radius: 8px;
+        padding: 10px 9px;
+        min-height: 58px;
+        display: grid;
+        gap: 5px;
+      }
+
+      .session-row.active {
+        background: #f3f4f6;
+      }
+
+      .session-row-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .session-row-meta {
+        font-size: 12px;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .pill {
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-weight: 760;
+        color: var(--muted);
+        background: #f3f4f6;
+        white-space: nowrap;
+      }
+
+      .pill.red {
+        color: var(--red);
+        background: var(--red-soft);
+      }
+
+      .pill.orange {
+        color: var(--orange);
+        background: var(--orange-soft);
+      }
+
+      .pill.blue {
+        color: var(--blue);
+        background: var(--blue-soft);
+      }
+
+      .pill.green {
+        color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .pill.teal {
+        color: var(--teal);
+        background: var(--teal-soft);
+      }
+
+      .sidebar-footer {
+        margin-top: auto;
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+        display: grid;
+        gap: 9px;
+      }
+
+      .status-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .main-chat {
+        display: grid;
+        grid-template-rows: 64px minmax(0, 1fr) 116px;
+        min-width: 0;
+      }
+
+      .topbar {
+        border-bottom: 1px solid var(--line);
+        background: rgba(247, 247, 245, 0.92);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 28px;
+      }
+
+      .top-title {
+        font-size: 15px;
+        font-weight: 780;
+      }
+
+      .top-subtitle {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 2px;
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .chat-scroll {
+        padding: 34px 52px 22px;
+        overflow: hidden;
+      }
+
+      .message {
+        max-width: 720px;
+        margin-bottom: 24px;
+      }
+
+      .message.user {
+        margin-left: auto;
+        max-width: 610px;
+      }
+
+      .bubble {
+        border-radius: 8px;
+        background: #ffffff;
+        border: 1px solid var(--line);
+        padding: 16px 18px;
+        box-shadow: 0 1px 0 rgba(17, 24, 39, 0.03);
+      }
+
+      .message.user .bubble {
+        background: #f0f2f4;
+        border-color: #f0f2f4;
+      }
+
+      .bubble-title {
+        font-size: 15px;
+        font-weight: 760;
+        margin-bottom: 8px;
+      }
+
+      .bubble-text {
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .file-chip {
+        border: 1px solid var(--line);
+        background: #ffffff;
+        border-radius: 8px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .file-thumb {
+        width: 38px;
+        height: 44px;
+        border-radius: 6px;
+        background:
+          linear-gradient(180deg, rgba(15, 118, 110, 0.14), rgba(37, 99, 235, 0.1)),
+          #ffffff;
+        border: 1px solid var(--line);
+      }
+
+      .tool-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .tool-step {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #f3f4f6;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .dot.done {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .dot.active {
+        background: var(--teal-soft);
+        color: var(--teal);
+        box-shadow: 0 0 0 5px rgba(15, 118, 110, 0.08);
+      }
+
+      .input-dock {
+        display: grid;
+        align-items: center;
+        padding: 16px 52px 28px;
+      }
+
+      .composer {
+        height: 70px;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: #ffffff;
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) 42px;
+        align-items: center;
+        padding: 0 12px;
+        box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
+      }
+
+      .composer input {
+        border: 0;
+        outline: 0;
+        color: var(--text);
+        font-size: 15px;
+      }
+
+      .result-panel {
+        border-left: 1px solid var(--line);
+        background: #ffffff;
+        display: grid;
+        grid-template-rows: 64px minmax(0, 1fr) 72px;
+      }
+
+      .result-head {
+        border-bottom: 1px solid var(--line);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .result-body {
+        padding: 20px 18px;
+        overflow: hidden;
+      }
+
+      .conclusion {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+
+      .conclusion strong {
+        display: block;
+        font-size: 19px;
+        margin-bottom: 5px;
+      }
+
+      .risk-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .risk-count {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: var(--panel-soft);
+      }
+
+      .risk-count span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .risk-count strong {
+        font-size: 22px;
+      }
+
+      .risk-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .risk-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 13px;
+        background: #ffffff;
+      }
+
+      .risk-card.open {
+        border-color: #fed7aa;
+        background: #fffaf2;
+      }
+
+      .risk-card-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 8px;
+      }
+
+      .risk-title {
+        font-weight: 760;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .risk-detail {
+        border-top: 1px solid rgba(217, 119, 6, 0.18);
+        margin-top: 10px;
+        padding-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .citation {
+        margin-top: 8px;
+        border-left: 3px solid var(--orange);
+        padding: 8px 10px;
+        background: #fff7ed;
+        color: #7c2d12;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .result-foot {
+        border-top: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 0 18px;
+      }
+
+      .modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(17, 24, 39, 0.28);
+        display: grid;
+        place-items: center;
+      }
+
+      .settings-app {
+        grid-template-columns: 264px minmax(0, 1fr);
+        position: relative;
+        background: var(--bg);
+      }
+
+      .settings-main {
+        display: grid;
+        place-items: center;
+        padding: 40px;
+      }
+
+      .settings-modal {
+        width: 980px;
+        height: 760px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        display: grid;
+        grid-template-columns: 260px minmax(0, 1fr);
+        overflow: hidden;
+      }
+
+      .settings-nav {
+        background: #fbfbfa;
+        border-right: 1px solid var(--line);
+        padding: 20px 14px;
+      }
+
+      .settings-title {
+        font-size: 18px;
+        font-weight: 780;
+        margin: 0 0 18px 6px;
+      }
+
+      .settings-item {
+        min-height: 48px;
+        border-radius: 8px;
+        padding: 9px 10px;
+        display: grid;
+        gap: 3px;
+      }
+
+      .settings-item.active {
+        background: var(--teal-soft);
+        color: var(--teal);
+      }
+
+      .settings-item strong {
+        font-size: 14px;
+      }
+
+      .settings-item span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .settings-content {
+        padding: 24px 28px;
+        overflow: hidden;
+      }
+
+      .settings-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 16px;
+        margin-bottom: 18px;
+      }
+
+      .form-section {
+        border-bottom: 1px solid var(--line);
+        padding: 16px 0;
+      }
+
+      .form-section:first-of-type {
+        padding-top: 0;
+      }
+
+      .form-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .form-section-title {
+        font-size: 15px;
+        font-weight: 780;
+      }
+
+      .provider-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .provider-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .provider-card.active {
+        border-color: var(--teal);
+        background: var(--teal-soft);
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+      }
+
+      .field label {
+        font-size: 12px;
+        font-weight: 760;
+        color: var(--muted);
+      }
+
+      .field input,
+      .field select {
+        height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0 12px;
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .switch {
+        width: 42px;
+        height: 24px;
+        border-radius: 999px;
+        background: var(--primary);
+        position: relative;
+      }
+
+      .switch::after {
+        content: "";
+        position: absolute;
+        right: 3px;
+        top: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #ffffff;
+      }
+
+      .report-app {
+        grid-template-columns: 264px minmax(0, 1fr);
+        position: relative;
+        background: var(--bg);
+      }
+
+      .report-workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 22px;
+        padding: 26px;
+        overflow: hidden;
+      }
+
+      .report-page {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 34px 42px;
+        box-shadow: 0 18px 50px rgba(17, 24, 39, 0.08);
+        overflow: hidden;
+      }
+
+      .report-kicker {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+
+      .report-title {
+        font-size: 31px;
+        font-weight: 820;
+        margin: 0 0 12px;
+      }
+
+      .report-meta {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+        margin: 24px 0;
+      }
+
+      .report-meta div {
+        padding: 12px;
+        border-right: 1px solid var(--line);
+      }
+
+      .report-meta div:last-child {
+        border-right: 0;
+      }
+
+      .report-meta span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 5px;
+      }
+
+      .report-section-title {
+        font-size: 18px;
+        font-weight: 800;
+        margin: 22px 0 12px;
+      }
+
+      .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .report-table th,
+      .report-table td {
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        padding: 11px 8px;
+        vertical-align: top;
+      }
+
+      .report-table th {
+        color: var(--muted);
+        font-weight: 760;
+        background: #fbfbfa;
+      }
+
+      .report-side {
+        display: grid;
+        align-content: start;
+        gap: 14px;
+      }
+
+      .side-panel {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .export-modal {
+        width: 520px;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+
+      .export-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 16px 0;
+      }
+
+      .export-option {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+      }
+
+      .export-option.active {
+        border-color: var(--primary);
+        background: var(--primary-soft);
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body data-screen="workspace">
+    <section class="screen app workspace-screen">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">合</div>
+          <div>
+            <div class="brand-title">汇安检测</div>
+            <div class="brand-subtitle">本地法规库 · AI 审核</div>
+          </div>
+        </div>
+        <button class="new-button">新建审核</button>
+        <div>
+          <div class="section-label">今天</div>
+          <div class="session-list">
+            <div class="session-row active">
+              <div class="session-row-title">蓝莓复合饮料 <span class="pill orange">有风险</span></div>
+              <div class="session-row-meta">保健食品 · 4 项风险 · 12:48</div>
+            </div>
+            <div class="session-row">
+              <div class="session-row-title">宠物鸡肉冻干 <span class="pill green">通过</span></div>
+              <div class="session-row-meta">宠物食品 · 09:16</div>
+            </div>
+            <div class="session-row">
+              <div class="session-row-title">便携充电器包装 <span class="pill blue">完成</span></div>
+              <div class="session-row-meta">电子产品 · 昨天</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="section-label">本周</div>
+          <div class="session-list">
+            <div class="session-row">
+              <div class="session-row-title">黑芝麻丸标签 <span class="pill">待确认</span></div>
+              <div class="session-row-meta">普通食品 · 2 项待确认</div>
+            </div>
+          </div>
+        </div>
+        <div class="sidebar-footer">
+          <div class="status-line"><span>当前模型</span><strong>GPT</strong></div>
+          <div class="status-line"><span>法规库</span><strong>2026.06</strong></div>
+          <button class="ghost-button">设置</button>
+        </div>
+      </aside>
+
+      <main class="main-chat">
+        <header class="topbar">
+          <div>
+            <div class="top-title">蓝莓复合饮料标签审核</div>
+            <div class="top-subtitle">自动路由：保健食品 · 本地法规库 food_general / health_food</div>
+          </div>
+          <div class="top-actions">
+            <button class="ghost-button">重新审核</button>
+            <button class="primary-button">导出报告</button>
+          </div>
+        </header>
+        <div class="chat-scroll">
+          <div class="message user">
+            <div class="bubble">
+              <div class="bubble-title">请审核这张标签，重点看宣传语和警示语。</div>
+              <div class="file-chip">
+                <div class="file-thumb"></div>
+                <div>
+                  <div class="bubble-title" style="font-size: 13px; margin: 0">label-front-blueberry.png</div>
+                  <div class="bubble-text" style="font-size: 12px">2.4 MB · 图片标签</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="message">
+            <div class="bubble">
+              <div class="bubble-title">正在进行合规审核</div>
+              <div class="bubble-text">我会先识别标签文字，再根据商品品类调用对应法规库，并输出可追溯的风险项。</div>
+              <div class="tool-list">
+                <div class="tool-step"><span class="dot done">✓</span><span>OCR 识别标签文字与营养成分表</span><span>1.8s</span></div>
+                <div class="tool-step"><span class="dot done">✓</span><span>结构化产品名称、配料、警示语、宣称语</span><span>0.9s</span></div>
+                <div class="tool-step"><span class="dot done">✓</span><span>路由到保健食品法规包</span><span>0.4s</span></div>
+                <div class="tool-step"><span class="dot active">4</span><span>检索本地法规条款并执行规则检查</span><span>进行中</span></div>
+                <div class="tool-step"><span class="dot">5</span><span>生成结构化风险结论与报告草稿</span><span>等待</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="message">
+            <div class="bubble">
+              <div class="bubble-title">初步结论：存在 4 项风险</div>
+              <div class="bubble-text">其中 1 项高风险与治疗功效宣称相关，2 项中风险与警示语及营养标示相关。右侧结果面板已展开详细依据。</div>
+            </div>
+          </div>
+        </div>
+        <footer class="input-dock">
+          <div class="composer">
+            <button class="icon-button">＋</button>
+            <input value="补充审核要求，或继续上传另一张标签..." />
+            <button class="primary-button" style="width: 38px; height: 38px; padding: 0">发</button>
+          </div>
+        </footer>
+      </main>
+
+      <aside class="result-panel">
+        <div class="result-head">
+          <div>
+            <div class="top-title">审核结果</div>
+            <div class="top-subtitle">结果版本 v1 · 已引用 6 条法规</div>
+          </div>
+          <button class="icon-button">×</button>
+        </div>
+        <div class="result-body">
+          <div class="conclusion">
+            <strong>存在合规风险</strong>
+            <div class="bubble-text">建议修改后再进入印刷或备案流程。</div>
+          </div>
+          <div class="risk-grid">
+            <div class="risk-count"><span>高风险</span><strong style="color: var(--red)">1</strong></div>
+            <div class="risk-count"><span>中风险</span><strong style="color: var(--orange)">2</strong></div>
+            <div class="risk-count"><span>低风险</span><strong style="color: var(--blue)">1</strong></div>
+          </div>
+          <div class="risk-list">
+            <div class="risk-card open">
+              <div class="risk-card-head">
+                <div class="risk-title">疑似使用疾病治疗功效宣称</div>
+                <span class="pill red">高风险</span>
+              </div>
+              <div class="risk-detail">
+                标签原文：改善高血压、调节血糖。
+                <div class="citation">依据：保健食品标签相关规定 · 宣称不得涉及疾病预防、治疗功能。</div>
+              </div>
+            </div>
+            <div class="risk-card">
+              <div class="risk-card-head">
+                <div class="risk-title">警示语位置不明显</div>
+                <span class="pill orange">中风险</span>
+              </div>
+              <div class="bubble-text">建议置于主要展示版面附近。</div>
+            </div>
+            <div class="risk-card">
+              <div class="risk-card-head">
+                <div class="risk-title">营养成分表单位需复核</div>
+                <span class="pill orange">中风险</span>
+              </div>
+              <div class="bubble-text">能量单位和每份含量标示不一致。</div>
+            </div>
+          </div>
+        </div>
+        <div class="result-foot">
+          <button class="ghost-button">复制结果</button>
+          <button class="primary-button">导出报告</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="screen settings-app settings-screen">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">合</div>
+          <div>
+            <div class="brand-title">汇安检测</div>
+            <div class="brand-subtitle">设置预览</div>
+          </div>
+        </div>
+        <button class="new-button">返回工作台</button>
+        <div class="section-label">设置分级</div>
+        <div class="session-list">
+          <div class="session-row active"><div class="session-row-title">基础设置</div><div class="session-row-meta">模型、API Key、报告格式</div></div>
+          <div class="session-row"><div class="session-row-title">审核设置</div><div class="session-row-meta">路由、联网核查、风险偏好</div></div>
+          <div class="session-row"><div class="session-row-title">知识库设置</div><div class="session-row-meta">本地法规库与索引</div></div>
+        </div>
+      </aside>
+      <main class="settings-main">
+        <div class="settings-modal">
+          <nav class="settings-nav">
+            <h2 class="settings-title">设置</h2>
+            <div class="settings-item active"><strong>基础设置</strong><span>普通用户最常用</span></div>
+            <div class="settings-item"><strong>模型供应商</strong><span>豆包 / DeepSeek / GPT / Claude</span></div>
+            <div class="settings-item"><strong>审核设置</strong><span>自动路由与联网核查</span></div>
+            <div class="settings-item"><strong>知识库设置</strong><span>法规版本与本地索引</span></div>
+            <div class="settings-item"><strong>OCR 设置</strong><span>识别语言与图片增强</span></div>
+            <div class="settings-item"><strong>报告设置</strong><span>抬头、Logo、免责声明</span></div>
+            <div class="settings-item"><strong>高级设置</strong><span>默认折叠，谨慎修改</span></div>
+          </nav>
+          <div class="settings-content">
+            <div class="settings-toolbar">
+              <div>
+                <div class="top-title">基础设置</div>
+                <div class="top-subtitle">只展示开始使用必须配置的内容。</div>
+              </div>
+              <button class="primary-button">保存设置</button>
+            </div>
+            <section class="form-section">
+              <div class="form-section-head">
+                <div class="form-section-title">当前启用模型</div>
+                <span class="pill green">连接正常</span>
+              </div>
+              <div class="provider-row">
+                <div class="provider-card active"><div><strong>GPT</strong><div class="top-subtitle">主审核模型</div></div><span class="pill teal">启用</span></div>
+                <div class="provider-card"><div><strong>DeepSeek</strong><div class="top-subtitle">OpenAI-compatible</div></div><span class="pill">未启用</span></div>
+                <div class="provider-card"><div><strong>豆包</strong><div class="top-subtitle">火山引擎 Ark</div></div><span class="pill">未启用</span></div>
+                <div class="provider-card"><div><strong>Claude</strong><div class="top-subtitle">Anthropic API</div></div><span class="pill">未启用</span></div>
+              </div>
+            </section>
+            <section class="form-section">
+              <div class="form-section-head">
+                <div class="form-section-title">API 与报告</div>
+                <button class="ghost-button">测试连接</button>
+              </div>
+              <div class="form-grid">
+                <div class="field"><label>Base URL</label><input value="https://api.openai.com/v1" /></div>
+                <div class="field"><label>模型 ID</label><input value="gpt-5.5" /></div>
+                <div class="field"><label>API Key</label><input value="sk-••••••••••••••••••" /></div>
+                <div class="field"><label>默认报告格式</label><select><option>Word + PDF</option></select></div>
+              </div>
+            </section>
+            <section class="form-section">
+              <div class="form-section-head">
+                <div class="form-section-title">审核默认项</div>
+                <span class="pill">可在高级设置调整更多</span>
+              </div>
+              <div class="switch-row"><div><strong>自动品类路由</strong><div class="top-subtitle">上传后自动选择法规包。</div></div><div class="switch"></div></div>
+              <div class="switch-row"><div><strong>联网核查新规</strong><div class="top-subtitle">只作为提示，不直接作为正式依据。</div></div><div class="switch"></div></div>
+            </section>
+          </div>
+        </div>
+      </main>
+    </section>
+
+    <section class="screen report-app report-screen">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">合</div>
+          <div>
+            <div class="brand-title">汇安检测</div>
+            <div class="brand-subtitle">报告预览</div>
+          </div>
+        </div>
+        <button class="new-button">回到结果</button>
+        <div class="section-label">报告目录</div>
+        <div class="session-list">
+          <div class="session-row active"><div class="session-row-title">审核结论</div><div class="session-row-meta">存在 4 项风险</div></div>
+          <div class="session-row"><div class="session-row-title">风险汇总</div><div class="session-row-meta">高 / 中 / 低风险</div></div>
+          <div class="session-row"><div class="session-row-title">风险明细</div><div class="session-row-meta">法规依据与建议</div></div>
+          <div class="session-row"><div class="session-row-title">免责声明</div><div class="session-row-meta">辅助审核声明</div></div>
+        </div>
+      </aside>
+      <main class="report-workspace">
+        <article class="report-page">
+          <div class="report-kicker">汇安检测合规审核报告</div>
+          <h1 class="report-title">蓝莓复合饮料标签审查</h1>
+          <div class="bubble-text">本报告基于本地法规库 2026.06 版本生成，审查结果仅作为企业内部合规辅助参考。</div>
+          <div class="report-meta">
+            <div><span>商品类别</span><strong>保健食品</strong></div>
+            <div><span>审核结论</span><strong style="color: var(--orange)">存在风险</strong></div>
+            <div><span>审核时间</span><strong>2026-06-28</strong></div>
+          </div>
+          <h2 class="report-section-title">风险汇总</h2>
+          <table class="report-table">
+            <thead><tr><th>等级</th><th>数量</th><th>处理建议</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pill red">高风险</span></td><td>1</td><td>修改后再进入印刷或备案流程</td></tr>
+              <tr><td><span class="pill orange">中风险</span></td><td>2</td><td>建议补充或调整表达</td></tr>
+              <tr><td><span class="pill blue">低风险</span></td><td>1</td><td>优化格式和一致性</td></tr>
+            </tbody>
+          </table>
+          <h2 class="report-section-title">风险明细</h2>
+          <table class="report-table">
+            <thead><tr><th>问题</th><th>标签原文</th><th>法规依据</th><th>修改建议</th></tr></thead>
+            <tbody>
+              <tr><td>治疗功效宣称</td><td>改善高血压</td><td>保健食品标签相关规定</td><td>删除疾病治疗表述，改为合规功能描述。</td></tr>
+              <tr><td>警示语不明显</td><td>本品不能代替药物</td><td>保健食品警示语要求</td><td>移至主要展示版面附近并增强可读性。</td></tr>
+            </tbody>
+          </table>
+        </article>
+        <aside class="report-side">
+          <div class="side-panel">
+            <div class="top-title">导出设置</div>
+            <div class="top-subtitle">报告模板：标准合规审查版</div>
+            <div class="export-options">
+              <div class="export-option active"><strong>Word</strong><div class="top-subtitle">可继续编辑</div></div>
+              <div class="export-option"><strong>PDF</strong><div class="top-subtitle">适合归档发送</div></div>
+            </div>
+            <button class="primary-button" style="width: 100%">生成报告</button>
+          </div>
+          <div class="side-panel">
+            <div class="top-title">包含内容</div>
+            <div class="switch-row"><span>风险汇总</span><div class="switch"></div></div>
+            <div class="switch-row"><span>法规摘录</span><div class="switch"></div></div>
+            <div class="switch-row"><span>修改建议</span><div class="switch"></div></div>
+          </div>
+        </aside>
+      </main>
+      <div class="modal-backdrop">
+        <div class="export-modal">
+          <div class="top-title">导出报告</div>
+          <div class="top-subtitle">选择格式和包含字段，生成后会保存到本地报告目录。</div>
+          <div class="export-options">
+            <div class="export-option active"><strong>Word 文档</strong><div class="top-subtitle">适合交给设计和法务继续编辑。</div></div>
+            <div class="export-option"><strong>PDF 文件</strong><div class="top-subtitle">适合对外发送和归档。</div></div>
+          </div>
+          <div class="switch-row"><span>包含法规条款摘录</span><div class="switch"></div></div>
+          <div class="switch-row"><span>包含免责声明</span><div class="switch"></div></div>
+          <div class="modal-actions">
+            <button class="ghost-button">取消</button>
+            <button class="primary-button">开始导出</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <script>
+      const params = new URLSearchParams(location.search);
+      document.body.dataset.screen = params.get("screen") || "workspace";
+    </script>
+  </body>
+</html>

@@ -1,0 +1,35 @@
+# Optional heavy integrations for production-like document understanding.
+# Install only when the machine has enough disk/CPU resources.
+
+# PaddleOCR image OCR. PaddlePaddle wheels differ by OS/CPU/GPU, so install
+# paddlepaddle following the official guide for the target machine first.
+paddleocr>=2.7.3
+
+# Lightweight ONNX OCR fallback. Good candidate for Windows/macOS desktop
+# packaging because it does not require a cloud OCR service.
+rapidocr-onnxruntime>=1.3.24
+
+# Python wrapper for a locally installed Tesseract binary. On macOS install
+# tesseract with `brew install tesseract tesseract-lang`; on Windows bundle
+# the binary and language data with the desktop app.
+pytesseract>=0.3.13
+
+# LiteLLM proxy/client. The app can also call a standalone LiteLLM proxy through
+# LITELLM_BASE_URL without importing this package.
+litellm>=1.60.0
+
+# Rich PDF/Office parsing candidates for legal fulltext and quote documents.
+# MinerU is usually installed as a CLI (`magic-pdf` / `mineru`); Docling is a
+# Python package that can be used as a structured parser in a later adapter.
+docling>=2.15.1
+
+# Agent orchestration and retrieval candidates. The current app uses a stable
+# backend-orchestrated flow; these are the next step for a true tool-calling
+# agent runtime and vector/RAG pipeline.
+langgraph>=0.2.60
+llama-index>=0.12.8
+haystack-ai>=2.8.0
+
+# Formal Word/PDF report rendering alternatives.
+docxtpl>=0.19.1
+weasyprint>=63.0
