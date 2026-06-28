@@ -393,8 +393,6 @@ export default function Home() {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [message, setMessage] = useState("");
-  const [customerName, setCustomerName] = useState("内部审核");
-  const [documentType, setDocumentType] = useState("产品标签");
   const [selectedIndustryId, setSelectedIndustryId] = useState("auto");
   const [selectedModelId, setSelectedModelId] = useState("");
   const [steps, setSteps] = useState<AgentStep[]>(initialSteps);
@@ -674,8 +672,8 @@ export default function Home() {
       const created = await api.createAuditTask({
         file_id: fileId,
         industry_id: reusable?.industry_id || selectedIndustryId,
-        customer_name: customerName,
-        document_type: documentType,
+        customer_name: reusable?.customer_name || "内部审核",
+        document_type: reusable?.document_type || "产品标签",
         model_provider_id: selectedModelId || "local",
         conversation_id: conversationId || undefined,
       });
@@ -1389,14 +1387,6 @@ export default function Home() {
                   </option>
                 ))}
               </select>
-              <label className="run-field">
-                <span>任务名称/客户</span>
-                <input value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="例如：内部审核" />
-              </label>
-              <label className="run-field">
-                <span>资料类型</span>
-                <input value={documentType} onChange={(event) => setDocumentType(event.target.value)} placeholder="例如：产品标签" />
-              </label>
             </div>
             {selectedFile && !isRunning ? (
               <div className="pending-attachment">

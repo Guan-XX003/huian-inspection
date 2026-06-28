@@ -639,13 +639,13 @@ button.message:hover {
 
 .run-options {
   display: grid;
-  grid-template-columns: 1.1fr 1.2fr 1fr 1fr;
+  grid-template-columns: minmax(160px, 0.9fr) minmax(220px, 1.1fr);
   gap: 8px;
   margin-bottom: 10px;
+  max-width: 560px;
 }
 
-.run-options select,
-.run-options input {
+.run-options select {
   height: 36px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -654,39 +654,6 @@ button.message:hover {
   padding: 0 10px;
   min-width: 0;
   font-size: 13px;
-}
-
-.run-field {
-  min-width: 0;
-  height: 36px;
-  display: grid;
-  grid-template-rows: 12px 1fr;
-  gap: 1px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 4px 10px 5px;
-}
-
-.run-field:focus-within {
-  border-color: rgba(37, 99, 235, 0.62);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
-.run-field span {
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 12px;
-  white-space: nowrap;
-}
-
-.run-field input {
-  height: auto;
-  border: 0;
-  border-radius: 0;
-  padding: 0;
-  outline: none;
-  min-width: 0;
 }
 
 .pending-attachment {
