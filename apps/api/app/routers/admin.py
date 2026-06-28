@@ -502,8 +502,16 @@ def create_model_provider(payload: ModelProviderCreate, db: Session = Depends(ge
     if item and item.base_url.strip().rstrip("/").lower() != normalized_base_url:
         item = None
     if item:
+        existing_secret = item.api_key_secret
+        existing_hint = item.api_key_hint
         for key, value in data.items():
+            if key == "api_key_secret" and not str(value or "").strip():
+                continue
+            if key == "api_key_hint" and not str(value or "").strip() and existing_hint:
+                continue
             setattr(item, key, value)
+        if not item.api_key_hint and existing_secret:
+            item.api_key_hint = "已保存密钥"
         item.status = "active"
     else:
         item = ModelProvider(**data)
@@ -525,6 +533,12 @@ def delete_model_provider(item_id: str, hard: bool = Query(False), db: Session =
     db.commit()
     db.refresh(item)
     return _serialize_model_provider(item)
+
+
+@router.get("/model-providers/{item_id}/secret")
+def get_model_provider_secret(item_id: str, db: Session = Depends(get_db)) -> dict[str, str]:
+    item = _get_or_404(db, ModelProvider, item_id)
+    return {"api_key_secret": item.api_key_secret or ""}
 
 
 @router.post("/model-providers/dedupe", response_model=list[ModelProviderRead])
@@ -562,15 +576,25 @@ def update_model_provider(item_id: str, payload: ModelProviderCreate, db: Sessio
     item = _get_or_404(db, ModelProvider, item_id)
     data = payload.model_dump()
     for key, value in data.items():
+        if key == "api_key_secret" and not str(value or "").strip():
+            continue
+        if key == "api_key_hint" and not str(value or "").strip() and item.api_key_hint:
+            continue
         setattr(item, key, value)
+    if not item.api_key_hint and item.api_key_secret:
+        item.api_key_hint = "已保存密钥"
     db.commit()
     db.refresh(item)
     return _serialize_model_provider(item)
 
 
 def _serialize_model_provider(item: ModelProvider) -> ModelProviderRead:
+    api_key_saved = bool((item.api_key_secret or "").strip())
     return ModelProviderRead.model_validate(item, from_attributes=True).model_copy(
-        update={"api_key_saved": bool((item.api_key_secret or "").strip())}
+        update={
+            "api_key_saved": api_key_saved,
+            "api_key_hint": item.api_key_hint or ("已保存密钥" if api_key_saved else ""),
+        }
     )
 
 

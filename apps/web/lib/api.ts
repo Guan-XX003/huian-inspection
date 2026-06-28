@@ -424,6 +424,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ status: "active", supports_json: true, ...payload }),
     }),
+  modelProviderSecret: (id: string) => request<{ api_key_secret: string }>(`/api/admin/model-providers/${id}/secret`),
   deactivate: (kind: "standards" | "audit-rules" | "detection-items" | "model-providers", id: string) =>
     request<unknown>(`/api/admin/${kind}/${id}`, { method: "DELETE" }),
   deleteConfig: (kind: "standards" | "audit-rules" | "detection-items" | "model-providers", id: string) =>

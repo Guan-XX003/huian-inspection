@@ -1113,6 +1113,60 @@ button.message:hover {
   font-size: 14px;
 }
 
+.secret-input {
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  align-items: center;
+  overflow: hidden;
+}
+
+.secret-input:focus-within {
+  border-color: rgba(37, 99, 235, 0.62);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.secret-input input {
+  height: 38px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+}
+
+.secret-toggle {
+  width: 36px;
+  height: 38px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+}
+
+.secret-toggle:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--panel-soft);
+}
+
+.key-status {
+  min-height: 18px;
+  color: var(--faint);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.key-status.saved {
+  color: var(--teal);
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
 .switch-row {
   display: flex;
   align-items: center;

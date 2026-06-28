@@ -8,6 +8,7 @@ import {
   Clipboard,
   Download,
   Eye,
+  EyeOff,
   FileText,
   FolderOpen,
   Loader2,
@@ -78,6 +79,8 @@ type ModelForm = {
   model: string;
   base_url: string;
   api_key_secret: string;
+  api_key_hint: string;
+  api_key_saved: boolean;
   supports_vision: boolean;
   supports_json: boolean;
   supports_tools: boolean;
@@ -214,6 +217,13 @@ function compareTaskTimeAsc(a: AuditTask, b: AuditTask) {
 
 function compareTaskTimeDesc(a: AuditTask, b: AuditTask) {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
+function maskApiKey(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 8) return "已保存密钥";
+  return `${trimmed.slice(0, 3)}****${trimmed.slice(-4)}`;
 }
 
 function getFindings(task?: AuditTask | null): AuditFinding[] {
@@ -387,6 +397,9 @@ export default function Home() {
   const [toolTests, setToolTests] = useState<Record<string, ToolTestResult>>({});
   const [testingToolId, setTestingToolId] = useState("");
   const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [apiKeyLoading, setApiKeyLoading] = useState(false);
+  const [revealedSavedApiKey, setRevealedSavedApiKey] = useState("");
   const [currentTask, setCurrentTask] = useState<AuditTask | null>(null);
   const [activeConversationId, setActiveConversationId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -429,6 +442,8 @@ export default function Home() {
     model: "gpt-5.5",
     base_url: "https://api.openai.com/v1",
     api_key_secret: "",
+    api_key_hint: "",
+    api_key_saved: false,
     supports_vision: true,
     supports_json: true,
     supports_tools: true,
@@ -443,8 +458,12 @@ export default function Home() {
   );
   const settingsDirty = useMemo(() => {
     if (!savedModelForm) return false;
-    return JSON.stringify(modelForm) !== JSON.stringify(savedModelForm);
-  }, [modelForm, savedModelForm]);
+    const normalize = (form: ModelForm) => ({
+      ...form,
+      api_key_secret: form.api_key_secret && form.api_key_secret === revealedSavedApiKey ? "" : form.api_key_secret,
+    });
+    return JSON.stringify(normalize(modelForm)) !== JSON.stringify(savedModelForm);
+  }, [modelForm, revealedSavedApiKey, savedModelForm]);
   const selectedQuoteItem = useMemo(
     () => detectionItems.find((item) => item.id === selectedQuoteItemId) || null,
     [detectionItems, selectedQuoteItemId],
@@ -522,6 +541,16 @@ export default function Home() {
     () => currentConversationTasks.findIndex((task) => task.id === currentTask?.id) + 1,
     [currentConversationTasks, currentTask],
   );
+  const matchingModelProvider = useMemo(
+    () =>
+      models.find(
+        (item) =>
+          item.provider === modelForm.provider &&
+          item.model === modelForm.model &&
+          item.base_url.replace(/\/$/, "") === modelForm.base_url.replace(/\/$/, ""),
+      ) || null,
+    [modelForm.base_url, modelForm.model, modelForm.provider, models],
+  );
 
   useEffect(() => {
     void loadInitialData();
@@ -572,12 +601,16 @@ export default function Home() {
           model: defaultModel.model,
           base_url: defaultModel.base_url,
           api_key_secret: "",
+          api_key_hint: defaultModel.api_key_hint || (defaultModel.api_key_saved ? "已保存密钥" : ""),
+          api_key_saved: defaultModel.api_key_saved,
           supports_vision: defaultModel.supports_vision,
           supports_json: defaultModel.supports_json,
           supports_tools: defaultModel.supports_tools,
         };
         setModelForm(nextModelForm);
         setSavedModelForm(nextModelForm);
+        setApiKeyVisible(false);
+        setRevealedSavedApiKey("");
       }
       if (taskList[0]) {
         setCurrentTask(taskList[0]);
@@ -850,7 +883,21 @@ export default function Home() {
   function applyProviderPreset(providerName: string) {
     const preset = providerPresets.find((item) => item.provider === providerName);
     if (!preset) return;
-    setModelForm((current) => ({ ...current, ...preset }));
+    const existing = models.find(
+      (item) =>
+        item.provider === preset.provider &&
+        item.model === preset.model &&
+        item.base_url.replace(/\/$/, "") === preset.base_url.replace(/\/$/, ""),
+    );
+    setModelForm((current) => ({
+      ...current,
+      ...preset,
+      api_key_secret: "",
+      api_key_hint: existing?.api_key_hint || (existing?.api_key_saved ? "已保存密钥" : ""),
+      api_key_saved: Boolean(existing?.api_key_saved),
+    }));
+    setApiKeyVisible(false);
+    setRevealedSavedApiKey("");
   }
 
   function closeSettings() {
@@ -863,17 +910,56 @@ export default function Home() {
 
   function discardSettingsChanges() {
     if (savedModelForm) setModelForm(savedModelForm);
+    setApiKeyVisible(false);
+    setRevealedSavedApiKey("");
     setConfirmSettingsClose(false);
     setSettingsOpen(false);
+  }
+
+  async function toggleApiKeyVisibility() {
+    if (apiKeyVisible) {
+      setApiKeyVisible(false);
+      return;
+    }
+    if (modelForm.api_key_secret) {
+      setApiKeyVisible(true);
+      return;
+    }
+    if (!matchingModelProvider?.api_key_saved) {
+      setApiKeyVisible(true);
+      return;
+    }
+    setApiKeyLoading(true);
+    setError("");
+    try {
+      const result = await api.modelProviderSecret(matchingModelProvider.id);
+      const secret = result.api_key_secret || "";
+      setModelForm((current) => ({ ...current, api_key_secret: secret }));
+      setRevealedSavedApiKey(secret);
+      setApiKeyVisible(true);
+    } catch (caught) {
+      setError(humanizeRequestError(caught, "读取已保存密钥失败。"));
+    } finally {
+      setApiKeyLoading(false);
+    }
   }
 
   async function saveModelProvider(options?: { closeAfterSave?: boolean }) {
     setError("");
     try {
       await waitForLocalService();
+      const apiKeyHint = modelForm.api_key_secret
+        ? maskApiKey(modelForm.api_key_secret)
+        : modelForm.api_key_hint || (modelForm.api_key_saved ? "已保存密钥" : "");
       const saved = await api.createModelProvider({
-        ...modelForm,
-        api_key_hint: modelForm.api_key_secret ? "已保存" : "",
+        provider: modelForm.provider,
+        model: modelForm.model,
+        base_url: modelForm.base_url,
+        api_key_secret: modelForm.api_key_secret,
+        api_key_hint: apiKeyHint,
+        supports_vision: modelForm.supports_vision,
+        supports_json: modelForm.supports_json,
+        supports_tools: modelForm.supports_tools,
         status: "active",
         default_for_text: true,
         default_for_vision: modelForm.supports_vision,
@@ -881,9 +967,16 @@ export default function Home() {
       const refreshed = await api.modelProviders();
       setModels(refreshed);
       setSelectedModelId(saved.id);
-      const nextModelForm = { ...modelForm, api_key_secret: "" };
+      const nextModelForm = {
+        ...modelForm,
+        api_key_secret: "",
+        api_key_hint: saved.api_key_hint || (saved.api_key_saved ? "已保存密钥" : ""),
+        api_key_saved: saved.api_key_saved,
+      };
       setModelForm(nextModelForm);
       setSavedModelForm(nextModelForm);
+      setApiKeyVisible(false);
+      setRevealedSavedApiKey("");
       setConfirmSettingsClose(false);
       if (options?.closeAfterSave) setSettingsOpen(false);
       setToast("模型配置已保存");
@@ -1699,12 +1792,34 @@ export default function Home() {
                     </label>
                     <label>
                       API Key
-                      <input
-                        type="password"
-                        value={modelForm.api_key_secret}
-                        onChange={(event) => setModelForm((current) => ({ ...current, api_key_secret: event.target.value }))}
-                        placeholder="保存到本地后端，不在前端列表明文显示"
-                      />
+                      <span className="secret-input">
+                        <input
+                          type={apiKeyVisible ? "text" : "password"}
+                          value={modelForm.api_key_secret}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setModelForm((current) => ({ ...current, api_key_secret: value }));
+                            if (value !== revealedSavedApiKey) setRevealedSavedApiKey("");
+                          }}
+                          placeholder={modelForm.api_key_saved ? "留空则继续使用已保存密钥" : "输入后保存到本地后端"}
+                        />
+                        <button
+                          type="button"
+                          className="secret-toggle"
+                          onClick={() => void toggleApiKeyVisibility()}
+                          disabled={apiKeyLoading}
+                          aria-label={apiKeyVisible ? "隐藏 API Key" : "显示 API Key"}
+                        >
+                          {apiKeyLoading ? <Loader2 size={15} className="spin" /> : apiKeyVisible ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                      </span>
+                      <span className={`key-status ${modelForm.api_key_secret || modelForm.api_key_saved ? "saved" : ""}`}>
+                        {modelForm.api_key_secret
+                          ? `将保存：${maskApiKey(modelForm.api_key_secret)}`
+                          : modelForm.api_key_saved
+                            ? `已保存：${modelForm.api_key_hint || "已保存密钥"}`
+                            : "未保存密钥"}
+                      </span>
                     </label>
                     <label>
                       当前供应商
