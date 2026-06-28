@@ -134,6 +134,28 @@ def _clean_source_excerpt(value: str) -> str:
     return text[:700]
 
 
+def _is_image_file(file_path: str) -> bool:
+    return str(file_path).lower().rsplit(".", 1)[-1] in {"jpg", "jpeg", "png", "bmp", "webp", "tif", "tiff"}
+
+
+def _rules_as_vision_checklist(rule_results: list[dict]) -> list[dict]:
+    checklist = []
+    for item in rule_results:
+        checklist.append(
+            {
+                **item,
+                "passed": True,
+                "detail": (
+                    "视觉模型优先识别图片原文后再核验该项；"
+                    "不要把 OCR 或初步字段抽取为空直接判定为缺失。"
+                ),
+                "suggestion": "",
+                "vision_check_required": True,
+            }
+        )
+    return checklist
+
+
 @router.get("/tasks", response_model=list[AuditTaskRead])
 def list_tasks(db: Session = Depends(get_db)) -> list[AuditTaskRead]:
     tasks = list(db.scalars(select(AuditTask).where(AuditTask.session_archived.is_(False)).order_by(AuditTask.created_at.desc())))
@@ -188,19 +210,13 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
         )
     )
     preliminary_rule_results = evaluate_rules(rules, fields)
-    model_rule_context = preliminary_rule_results
-    if provider and provider.supports_vision and ocr_result.get("provider") == "unavailable":
-        model_rule_context = [
-            {
-                **item,
-                "passed": True,
-                "detail": "OCR 不可用，待视觉模型识别后再执行本地规则。",
-                "suggestion": "",
-                "risk_level": "low",
-            }
-            for item in preliminary_rule_results
-        ]
+    vision_primary = bool(provider and provider.supports_vision and _is_image_file(file.path))
+    ocr_result["analysis_mode"] = "vision_primary_ocr_reference" if vision_primary else "ocr_primary"
+    model_rule_context = _rules_as_vision_checklist(preliminary_rule_results) if vision_primary else preliminary_rule_results
     model_result = get_model_gateway().analyze(provider, industry.name, ocr_result, fields, model_rule_context, file.path)
+    if vision_primary:
+        model_result["route"] = "vision+ocr"
+        model_result["vision_primary"] = True
     model_fields = model_result.get("extracted_fields")
     if isinstance(model_fields, dict) and model_fields:
         fields = {**fields, **model_fields}
@@ -244,6 +260,7 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
         "summary": model_result["summary"],
         "risk_level": model_result["risk_level"],
         "route": model_result["route"],
+        "vision_primary": bool(model_result.get("vision_primary")),
         "industry": industry.name,
         "industry_code": industry.code,
         "auto_classified_industry": ocr_result.get("auto_classified_industry", ""),

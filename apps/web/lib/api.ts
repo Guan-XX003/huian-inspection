@@ -165,6 +165,7 @@ export type AuditTask = {
     summary?: string;
     risk_level?: string;
     route?: string;
+    vision_primary?: boolean;
     industry?: string;
     standards?: string[];
     compliant_items?: Array<Record<string, unknown>>;

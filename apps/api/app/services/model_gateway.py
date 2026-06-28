@@ -447,19 +447,26 @@ class ModelGateway:
         ]
         ocr_text = ocr_result.get("text", "")
         extracted_before_model = fields
-        if route == "vision+ocr" and ocr_result.get("provider") in {"mock", "unavailable"}:
-            ocr_text = ""
+        if route == "vision+ocr":
             extracted_before_model = {}
+            if ocr_result.get("provider") in {"mock", "unavailable"}:
+                ocr_text = ""
         context = {
             "industry": industry_name,
             "route": route,
+            "priority": "视觉模型直接识别图片为准；OCR 仅作为参考，不作为缺失判定依据。" if route == "vision+ocr" else "OCR 结构化文本为主。",
             "ocr_text": ocr_text,
             "ocr_confidence": ocr_result.get("average_confidence"),
+            "ocr_provider": ocr_result.get("provider"),
             "extracted_fields_before_model": extracted_before_model,
             "rules": rules,
         }
         return (
             "请识别上传文件中的中文标签/报告内容，并按检测行业审核要求输出紧凑 JSON。"
+            "如果 route=vision+ocr，你必须把图片视觉识别作为第一依据，先独立阅读图片中的标签文字、表格和版面；"
+            "OCR 文本只能作为辅助参考，不能因为 OCR 漏识别、乱码或字段为空就判定标签缺失。"
+            "当图片中确实看得见某字段时，应在 extracted_fields 中补全并在 findings 中不要输出该字段缺失风险。"
+            "只有图片本身也看不清、被遮挡、缺少该字段，或法规规则核验后仍不合规，才输出风险。"
             "审核依据必须优先使用审核上下文 rules 中提供的本地标准规则、条款号、source_excerpt 和 suggestion；"
             "不要假装联网检索法规，不要编造未在上下文出现的具体条款。"
             "必须只返回 JSON，不要 Markdown。JSON 字段必须包含："
@@ -471,9 +478,9 @@ class ModelGateway:
             "宠物食品还要抽取 target_pet, feeding_instruction, manual_warning；电子电器还要抽取 model_no, rating, certification, manual_warning。"
             "营养表可以压缩表达，字段看不清就写 null。"
             "findings 每项包含 title, risk_level, field_key, evidence_text, reason, suggestion, standard_code, standard_clause, source_excerpt。"
-            "如果 OCR 不可用或 extracted_fields_before_model 为空，请先基于图片独立识别字段；"
-            "不要把空 OCR 导致的 failed 规则当作最终结论，只有当图片识别后仍缺失或不清晰时才输出风险。"
-            "如果本地 rules 已经包含 failed 规则，请结合你从图片识别出的字段重新判断，并保留对应 standard_code、standard_clause 和 source_excerpt。"
+            "如果 OCR 不可用、OCR 低置信度或 extracted_fields_before_model 为空，请先基于图片独立识别字段。"
+            "如果本地 rules 已经包含 failed 或 vision_check_required 规则，请结合你从图片识别出的字段重新判断，"
+            "并保留对应 standard_code、standard_clause 和 source_excerpt。"
             f"\n\n审核上下文：{json.dumps(context, ensure_ascii=False)}"
         )
 

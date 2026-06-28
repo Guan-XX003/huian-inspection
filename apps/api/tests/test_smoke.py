@@ -31,6 +31,10 @@ def test_industry_router_maps_core_categories() -> None:
 
 def test_audit_uses_model_extracted_fields(monkeypatch, tmp_path) -> None:
     def fake_analyze(self, provider, industry_name, ocr_result, fields, rule_results, file_path):
+        assert ocr_result["analysis_mode"] == "vision_primary_ocr_reference"
+        assert rule_results
+        assert all(item["passed"] for item in rule_results)
+        assert all(item.get("vision_check_required") for item in rule_results)
         return {
             "provider": "test/gpt-5.5",
             "route": "vision+ocr",
@@ -41,6 +45,10 @@ def test_audit_uses_model_extracted_fields(monkeypatch, tmp_path) -> None:
             "extracted_fields": {
                 "product_name": "烧凉粉（方便凉粉）",
                 "license_no": "SC10741018302531",
+                "ingredients": "饮用水、豌豆淀粉、魔芋粉、调味包",
+                "net_content": "305g",
+                "manufacturer": "河南某食品有限公司",
+                "shelf_life": "6个月",
                 "nutrition": "能量、蛋白质、脂肪、碳水化合物、钠",
                 "claims": "方便凉粉",
             },
@@ -95,6 +103,7 @@ def test_audit_uses_model_extracted_fields(monkeypatch, tmp_path) -> None:
     assert task["extracted_fields"]["license_no"] == "SC10741018302531"
     assert task["model_used"] == "test/gpt-5.5"
     assert task["final_report"]["route"] == "vision+ocr"
+    assert task["final_report"]["vision_primary"] is True
 
 
 def test_standard_document_import_creates_reviewable_rules(monkeypatch, tmp_path) -> None:

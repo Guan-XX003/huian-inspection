@@ -84,7 +84,7 @@ type QuoteItemForm = {
 
 const initialSteps: AgentStep[] = [
   { id: "upload", label: "上传并读取文件", description: "保存原始图片、PDF 或文本资料。", status: "waiting" },
-  { id: "ocr", label: "OCR 识别", description: "提取标签文字、表格和关键版面信息。", status: "waiting" },
+  { id: "ocr", label: "视觉/OCR 识别", description: "有视觉模型时优先看图，OCR 作为辅助和兜底。", status: "waiting" },
   { id: "route", label: "品类路由", description: "自动选择食品、保健食品、电子产品等法规包。", status: "waiting" },
   { id: "rules", label: "法规检索与规则校验", description: "调用本地法规库和确定性审核规则。", status: "waiting" },
   { id: "review", label: "模型合规分析", description: "输出风险等级、法规依据和修改建议。", status: "waiting" },
@@ -1146,7 +1146,7 @@ export default function Home() {
                   <Upload size={26} />
                 </div>
                 <h1>上传标签图片或文档，开始合规审核</h1>
-                <p>支持图片、PDF、Word 和纯文本。系统会自动 OCR、路由法规库，并输出可追溯的风险建议。</p>
+                <p>支持图片、PDF、Word 和纯文本。有视觉模型时优先看图识别，OCR 作为辅助，并输出可追溯的风险建议。</p>
                 <div className="empty-actions">
                   <button className="primary-button" onClick={() => fileInputRef.current?.click()}>
                     <Paperclip size={16} />
@@ -1185,7 +1185,7 @@ export default function Home() {
 
                 <div className="message agent-message">
                   <div className="message-title">智能体执行过程</div>
-                  <div className="message-text">每一步都由真实后端能力承接：文件上传、OCR、品类路由、规则校验和模型审核。</div>
+                  <div className="message-text">每一步都由真实后端能力承接：文件上传、视觉/OCR 识别、品类路由、规则校验和模型审核。</div>
                   <div className="agent-steps">
                     {steps.map((step, index) => (
                       <div key={step.id} className={`agent-step ${step.status}`}>
@@ -1287,6 +1287,7 @@ export default function Home() {
                 <>
                   <div className="conclusion-box">
                     <strong>{getConclusion(findings, riskOverrides)}</strong>
+                    {currentTask.final_report?.vision_primary ? <em className="pill teal">视觉优先识别</em> : null}
                     <span>{currentTask.final_report?.summary || "系统已生成结构化审核结果。"}</span>
                   </div>
                   <div className="risk-grid">
