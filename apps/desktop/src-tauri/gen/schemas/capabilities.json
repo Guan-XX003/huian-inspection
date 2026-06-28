@@ -1,1 +1,1 @@
-{}
+{"desktop-default":{"identifier":"desktop-default","description":"Allow the main desktop window to open save dialogs and write reports to user-selected locations.","local":true,"windows":["main"],"permissions":["core:default","dialog:default","fs:allow-write-file","shell:default"]}}

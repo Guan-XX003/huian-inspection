@@ -108,6 +108,8 @@ fn main() {
     let run_api_process = Arc::clone(&api_process);
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .setup(move |app| {
             let child = start_api_sidecar(app).map_err(|error| error.to_string())?;

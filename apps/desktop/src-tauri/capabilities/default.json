@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop-default",
+  "description": "Allow the main desktop window to open save dialogs and write reports to user-selected locations.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "fs:allow-write-file",
+    "shell:default"
+  ]
+}

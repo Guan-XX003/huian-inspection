@@ -60,6 +60,11 @@ type RiskOverride = {
   status?: "pending" | "confirmed" | "dismissed";
 };
 
+type SaveFilter = {
+  name: string;
+  extensions: string[];
+};
+
 type ModelForm = {
   provider: string;
   model: string;
@@ -251,8 +256,16 @@ function buildReportText(task: AuditTask, overrides: Record<string, RiskOverride
   return lines.join("\n");
 }
 
-function downloadBlob(filename: string, content: BlobPart, type: string) {
-  const blob = new Blob([content], { type });
+function isTauriDesktop() {
+  return typeof window !== "undefined" && Boolean((window as Window & { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
+}
+
+function makeBlob(content: BlobPart | Blob, type: string) {
+  return content instanceof Blob ? content : new Blob([content], { type });
+}
+
+function downloadBlob(filename: string, content: BlobPart | Blob, type: string) {
+  const blob = makeBlob(content, type);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -261,6 +274,31 @@ function downloadBlob(filename: string, content: BlobPart, type: string) {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+async function saveReportFile(filename: string, content: BlobPart | Blob, type: string, filters: SaveFilter[]) {
+  const blob = makeBlob(content, type);
+
+  if (isTauriDesktop()) {
+    try {
+      const [{ save }, { writeFile }] = await Promise.all([
+        import("@tauri-apps/plugin-dialog"),
+        import("@tauri-apps/plugin-fs"),
+      ]);
+      const path = await save({ defaultPath: filename, filters });
+      if (!path) {
+        return false;
+      }
+      await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+      return true;
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "请确认应用有文件保存权限。";
+      throw new Error(`打开保存窗口失败：${message}`);
+    }
+  }
+
+  downloadBlob(filename, blob, type);
+  return true;
 }
 
 function makeDocHtml(task: AuditTask, overrides: Record<string, RiskOverride>) {
@@ -675,7 +713,13 @@ export default function Home() {
         throw new Error("PDF 报告生成失败，请稍后重试。");
       }
       const blob = await response.blob();
-      downloadBlob(`audit-${currentTask.id}.pdf`, blob, "application/pdf");
+      const saved = await saveReportFile(
+        `汇安检测-审核报告-${currentTask.id}.pdf`,
+        blob,
+        "application/pdf",
+        [{ name: "PDF 报告", extensions: ["pdf"] }],
+      );
+      if (!saved) return;
       setExportOpen(false);
       setToast("PDF 报告已生成");
     } catch (caught) {
@@ -683,12 +727,23 @@ export default function Home() {
     }
   }
 
-  function downloadWord() {
+  async function downloadWord() {
     if (!currentTask) return;
-    const html = makeDocHtml(currentTask, riskOverrides);
-    downloadBlob(`audit-${currentTask.id}.doc`, html, "application/msword;charset=utf-8");
-    setExportOpen(false);
-    setToast("Word 报告已生成");
+    setError("");
+    try {
+      const html = makeDocHtml(currentTask, riskOverrides);
+      const saved = await saveReportFile(
+        `汇安检测-审核报告-${currentTask.id}.doc`,
+        html,
+        "application/msword;charset=utf-8",
+        [{ name: "Word 文档", extensions: ["doc"] }],
+      );
+      if (!saved) return;
+      setExportOpen(false);
+      setToast("Word 报告已生成");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Word 报告生成失败。");
+    }
   }
 
   function updateRisk(findingId: string, patch: RiskOverride) {
@@ -1979,7 +2034,7 @@ export default function Home() {
             <div className="modal-head">
               <div>
                 <h2>导出报告</h2>
-                <p>生成后会保存到本地下载目录。Word 可继续编辑，PDF 适合归档发送。</p>
+                <p>桌面端可选择保存位置；浏览器中会保存到默认下载目录。Word 可继续编辑，PDF 适合归档发送。</p>
               </div>
               <button className="icon-button" onClick={() => setExportOpen(false)} aria-label="关闭导出弹窗">
                 <X size={16} />
