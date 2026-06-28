@@ -1,0 +1,29 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="176" y1="116" x2="858" y2="902" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#071825"/>
+      <stop offset="0.56" stop-color="#0D3D42"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="289" y1="258" x2="741" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#BFEFE7"/>
+    </linearGradient>
+    <linearGradient id="cut" x1="392" y1="340" x2="657" y2="628" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F766E"/>
+      <stop offset="1" stop-color="#071825"/>
+    </linearGradient>
+    <filter id="shadow" x="152" y="146" width="720" height="756" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="34" stdDeviation="34" flood-color="#031012" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="224" fill="url(#bg)"/>
+  <path opacity="0.16" d="M213 264C310 173 458 145 585 184C700 219 779 304 824 410C871 523 850 656 778 753C706 851 581 895 462 875C337 854 241 766 200 650C157 529 119 353 213 264Z" fill="#E7FFF9"/>
+  <g filter="url(#shadow)">
+    <path d="M512 184L750 278V453C750 614 654 758 512 826C370 758 274 614 274 453V278L512 184Z" fill="url(#shield)"/>
+  </g>
+  <path d="M512 260L675 325V456C675 574 609 682 512 739C415 682 349 574 349 456V325L512 260Z" fill="url(#cut)"/>
+  <text x="512" y="640" text-anchor="middle" font-family="Inter, SF Pro Display, Segoe UI, Arial, sans-serif" font-size="330" font-weight="850" fill="#F8FAFC">H</text>
+  <path d="M640 332L700 356V446C700 569 633 696 512 765" stroke="#DFFCF6" stroke-width="24" stroke-linecap="round" opacity="0.72"/>
+  <path d="M330 292L512 220L692 292" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" opacity="0.4"/>
+</svg>

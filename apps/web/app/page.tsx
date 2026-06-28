@@ -106,6 +106,12 @@ const initialSteps: AgentStep[] = [
   { id: "review", label: "模型合规分析", description: "输出风险等级、法规依据和修改建议。", status: "waiting" },
 ];
 
+const MAX_AUDIT_IMAGES = 12;
+const MERGED_IMAGE_MAX_WIDTH = 1600;
+const MERGED_IMAGE_MAX_HEIGHT = 30000;
+const MERGED_IMAGE_MARGIN = 48;
+const MERGED_IMAGE_LABEL_HEIGHT = 48;
+
 const providerPresets = [
   {
     provider: "OpenAI",
@@ -205,6 +211,108 @@ function taskTitle(task?: AuditTask | null) {
   if (name) return String(name);
   const route = task.final_report?.industry || task.document_type || "标签审核";
   return `${route} ${task.id.slice(0, 8)}`;
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function isImageFile(file: File) {
+  return file.type.startsWith("image/");
+}
+
+function readImage(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error(`无法读取图片：${file.name}`));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToPngFile(canvas: HTMLCanvasElement, filename: string) {
+  return new Promise<File>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("多图合成失败，请减少图片数量后重试。"));
+        return;
+      }
+      resolve(new File([blob], filename, { type: "image/png" }));
+    }, "image/png");
+  });
+}
+
+async function composeAuditImages(files: File[]) {
+  const images = await Promise.all(files.map((file) => readImage(file)));
+  let prepared = images.map((image) => {
+    const originalWidth = image.naturalWidth || image.width;
+    const originalHeight = image.naturalHeight || image.height;
+    const width = Math.min(MERGED_IMAGE_MAX_WIDTH, originalWidth);
+    const scale = width / originalWidth;
+    const height = Math.max(1, Math.round(originalHeight * scale));
+    return { image, width: Math.round(width), height };
+  });
+  const fixedHeight = MERGED_IMAGE_MARGIN + prepared.length * (MERGED_IMAGE_LABEL_HEIGHT + MERGED_IMAGE_MARGIN);
+  const imageHeight = prepared.reduce((sum, item) => sum + item.height, 0);
+  const maxImageHeight = MERGED_IMAGE_MAX_HEIGHT - fixedHeight;
+  if (imageHeight > maxImageHeight) {
+    const scale = Math.max(0.25, maxImageHeight / imageHeight);
+    prepared = prepared.map((item) => ({
+      ...item,
+      width: Math.max(1, Math.round(item.width * scale)),
+      height: Math.max(1, Math.round(item.height * scale)),
+    }));
+  }
+  const contentWidth = Math.max(...prepared.map((item) => item.width));
+  const canvasWidth = contentWidth + MERGED_IMAGE_MARGIN * 2;
+  const canvasHeight =
+    MERGED_IMAGE_MARGIN +
+    prepared.reduce((sum, item) => sum + MERGED_IMAGE_LABEL_HEIGHT + item.height + MERGED_IMAGE_MARGIN, 0);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("当前环境无法合成多张图片。");
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvasWidth, canvasHeight);
+  context.textBaseline = "middle";
+
+  let y = MERGED_IMAGE_MARGIN;
+  prepared.forEach((item, index) => {
+    context.fillStyle = "#f3f4f6";
+    context.fillRect(MERGED_IMAGE_MARGIN, y, contentWidth, MERGED_IMAGE_LABEL_HEIGHT);
+    context.fillStyle = "#111827";
+    context.font = "600 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    context.fillText(`图片 ${index + 1} / ${files.length}`, MERGED_IMAGE_MARGIN + 18, y + MERGED_IMAGE_LABEL_HEIGHT / 2);
+    context.fillStyle = "#6b7280";
+    context.font = "18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const fileName = files[index]?.name || "";
+    const maxNameWidth = contentWidth - 210;
+    const displayName =
+      context.measureText(fileName).width > maxNameWidth && fileName.length > 28
+        ? `${fileName.slice(0, 16)}...${fileName.slice(-10)}`
+        : fileName;
+    context.fillText(displayName, MERGED_IMAGE_MARGIN + 170, y + MERGED_IMAGE_LABEL_HEIGHT / 2);
+    y += MERGED_IMAGE_LABEL_HEIGHT;
+    context.drawImage(item.image, MERGED_IMAGE_MARGIN, y, item.width, item.height);
+    y += item.height + MERGED_IMAGE_MARGIN;
+  });
+
+  return canvasToPngFile(canvas, `huian-audit-images-${Date.now()}.png`);
+}
+
+async function prepareAuditUploadFile(files: File[]) {
+  if (files.length === 1) return files[0];
+  return composeAuditImages(files);
 }
 
 function conversationIdOf(task?: AuditTask | null) {
@@ -402,7 +510,7 @@ export default function Home() {
   const [revealedSavedApiKey, setRevealedSavedApiKey] = useState("");
   const [currentTask, setCurrentTask] = useState<AuditTask | null>(null);
   const [activeConversationId, setActiveConversationId] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
   const [message, setMessage] = useState("");
@@ -624,7 +732,7 @@ export default function Home() {
   function resetForNewAudit() {
     setCurrentTask(null);
     setActiveConversationId("");
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setUploadedFile(null);
     setRequestSubmitted(false);
     setMessage("");
@@ -648,23 +756,46 @@ export default function Home() {
     setSteps(initialSteps.map((step) => ({ ...step, status: "waiting" })));
   }
 
-  function selectFile(file: File | null) {
-    if (!file) return;
-    setSelectedFile(file);
+  function selectFiles(fileList: FileList | File[]) {
+    const incoming = Array.from(fileList).filter(Boolean);
+    if (!incoming.length) return;
+    setError("");
+    setSelectedFiles((current) => {
+      const next = current.length && current.every(isImageFile) && incoming.every(isImageFile) ? [...current, ...incoming] : incoming;
+      if (next.length > 1 && !next.every(isImageFile)) {
+        setError("一次审核多文件目前仅支持图片；PDF、Word、TXT 请单独上传。");
+        return current;
+      }
+      if (next.length > MAX_AUDIT_IMAGES) {
+        setError(`一次最多上传 ${MAX_AUDIT_IMAGES} 张图片。`);
+        return current;
+      }
+      setToast(next.length > 1 ? `已选择 ${next.length} 张图片` : `已选择 ${next[0].name}`);
+      return next;
+    });
     setUploadedFile(null);
     setRequestSubmitted(false);
     setSteps(initialSteps);
-    setToast(`已选择 ${file.name}`);
   }
 
   function handleFileInput(event: ChangeEvent<HTMLInputElement>) {
-    selectFile(event.target.files?.[0] || null);
+    if (event.target.files) selectFiles(event.target.files);
     event.target.value = "";
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
-    selectFile(event.dataTransfer.files?.[0] || null);
+    selectFiles(event.dataTransfer.files);
+  }
+
+  function removeSelectedFile(index: number) {
+    setSelectedFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setUploadedFile(null);
+  }
+
+  function clearSelectedFiles() {
+    setSelectedFiles([]);
+    setUploadedFile(null);
   }
 
   function makeTextFile() {
@@ -675,9 +806,8 @@ export default function Home() {
 
   async function runAudit(options?: { reuseTask?: AuditTask }) {
     const reusable = options?.reuseTask;
-    const inputFile = selectedFile || makeTextFile();
     const conversationId = conversationIdOf(reusable) || activeConversationId || conversationIdOf(currentTask);
-    if (!inputFile && !reusable) {
+    if (!selectedFiles.length && !message.trim() && !reusable) {
       setError("请先上传标签图片、PDF、Word，或粘贴标签文本。");
       return;
     }
@@ -688,6 +818,7 @@ export default function Home() {
     resetSteps();
     setResultCollapsed(false);
     try {
+      const inputFile = selectedFiles.length ? await prepareAuditUploadFile(selectedFiles) : makeTextFile();
       let fileId = reusable?.file_id || uploadedFile?.id || "";
       if (!fileId) {
         if (!inputFile) throw new Error("缺少可审核文件。");
@@ -719,7 +850,7 @@ export default function Home() {
       setRiskOverrides({});
       const nextTasks = await api.auditTasks();
       setTasks(nextTasks);
-      setSelectedFile(null);
+      setSelectedFiles([]);
       setUploadedFile(null);
       setMessage("");
       setExpandedFindingId(getFindings(created)[0]?.finding_id || "");
@@ -746,7 +877,7 @@ export default function Home() {
   function selectTask(task: AuditTask) {
     setCurrentTask(task);
     setActiveConversationId(conversationIdOf(task));
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setUploadedFile(null);
     setRequestSubmitted(true);
     setRiskOverrides({});
@@ -1263,13 +1394,20 @@ export default function Home() {
 
   return (
     <main className="agent-shell">
-      <input ref={fileInputRef} className="hidden-input" type="file" onChange={handleFileInput} />
+      <input
+        ref={fileInputRef}
+        className="hidden-input"
+        type="file"
+        accept="image/*,.pdf,.doc,.docx,.txt"
+        multiple
+        onChange={handleFileInput}
+      />
       <input ref={importInputRef} className="hidden-input" type="file" onChange={importKnowledgeFile} />
       <input ref={quoteImportInputRef} className="hidden-input" type="file" onChange={importQuoteFile} />
 
       <aside className="agent-sidebar">
         <div className="brand">
-          <div className="brand-mark">合</div>
+          <img className="brand-mark" src="/huian-icon.svg" alt="汇安检测" />
           <div>
             <div className="brand-title">汇安检测</div>
             <div className="brand-subtitle">本地法规库 · AI 审核</div>
@@ -1380,7 +1518,7 @@ export default function Home() {
                   <Upload size={26} />
                 </div>
                 <h1>上传标签图片或文档，开始合规审核</h1>
-                <p>支持图片、PDF、Word 和纯文本。有视觉模型时优先看图识别，OCR 作为辅助，并输出可追溯的风险建议。</p>
+                <p>支持多张图片、PDF、Word 和纯文本。有视觉模型时优先看图识别，OCR 作为辅助，并输出可追溯的风险建议。</p>
                 <div className="empty-actions">
                   <button className="primary-button" onClick={() => fileInputRef.current?.click()}>
                     <Paperclip size={16} />
@@ -1396,24 +1534,36 @@ export default function Home() {
 
             {(requestSubmitted || isRunning || currentTask) && (
               <div className="message-stack">
-                {requestSubmitted && (selectedFile || uploadedFile || message) && (
+                {requestSubmitted && (selectedFiles.length > 0 || uploadedFile || message) && (
                   <div className="message user-message">
                     <div className="message-title">审核请求</div>
                     <div className="message-text">{message || "请审核这个标签，重点检查强制字段、宣称语、警示语和营养标示。"}</div>
-                    {(selectedFile || uploadedFile) && (
+                    {selectedFiles.length > 0 ? (
+                      <div className="file-chip-list">
+                        {selectedFiles.map((file, index) => (
+                          <div className="file-chip" key={`${file.name}-${file.size}-${index}`}>
+                            <FileText size={22} />
+                            <div>
+                              <strong>{file.name}</strong>
+                              <span>{formatFileSize(file.size)} · {selectedFiles.length > 1 ? `第 ${index + 1} 张` : "待上传"}</span>
+                            </div>
+                            {!isRunning ? (
+                              <button className="icon-button" onClick={() => removeSelectedFile(index)} aria-label="移除文件">
+                                <X size={14} />
+                              </button>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    ) : uploadedFile ? (
                       <div className="file-chip">
                         <FileText size={22} />
                         <div>
-                          <strong>{selectedFile?.name || uploadedFile?.original_name}</strong>
-                          <span>{selectedFile ? `${Math.round(selectedFile.size / 1024)} KB` : "已上传"}</span>
+                          <strong>{uploadedFile.original_name}</strong>
+                          <span>已上传</span>
                         </div>
-                        {selectedFile && !isRunning ? (
-                          <button className="icon-button" onClick={() => setSelectedFile(null)} aria-label="移除文件">
-                            <X size={14} />
-                          </button>
-                        ) : null}
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 )}
 
@@ -1481,16 +1631,26 @@ export default function Home() {
                 ))}
               </select>
             </div>
-            {selectedFile && !isRunning ? (
-              <div className="pending-attachment">
-                <FileText size={20} />
-                <div>
-                  <strong>{selectedFile.name}</strong>
-                  <span>{Math.round(selectedFile.size / 1024)} KB · 待发送</span>
+            {selectedFiles.length > 0 && !isRunning ? (
+              <div className="pending-attachments">
+                <div className="pending-attachments-head">
+                  <span>{selectedFiles.length > 1 ? `${selectedFiles.length} 张图片待发送` : "1 个文件待发送"}</span>
+                  <button className="text-button" onClick={clearSelectedFiles} disabled={isRunning}>
+                    全部移除
+                  </button>
                 </div>
-                <button className="icon-button" onClick={() => setSelectedFile(null)} disabled={isRunning} aria-label="移除待发送文件">
-                  <X size={14} />
-                </button>
+                {selectedFiles.map((file, index) => (
+                  <div className="pending-attachment" key={`${file.name}-${file.size}-${index}`}>
+                    <FileText size={20} />
+                    <div>
+                      <strong>{file.name}</strong>
+                      <span>{formatFileSize(file.size)} · {selectedFiles.length > 1 ? `图片 ${index + 1}` : "待发送"}</span>
+                    </div>
+                    <button className="icon-button" onClick={() => removeSelectedFile(index)} disabled={isRunning} aria-label="移除待发送文件">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
               </div>
             ) : null}
             <div className="composer">

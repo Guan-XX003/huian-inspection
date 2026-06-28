@@ -89,11 +89,10 @@ button:disabled {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  display: grid;
-  place-items: center;
-  color: #ffffff;
-  font-weight: 760;
-  background: linear-gradient(135deg, #111827, #0f766e);
+  display: block;
+  box-shadow:
+    0 10px 24px rgba(15, 118, 110, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .brand-title {
@@ -559,6 +558,16 @@ button.message:hover {
   gap: 10px;
 }
 
+.file-chip-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.file-chip-list .file-chip {
+  margin-top: 0;
+}
+
 .file-chip strong,
 .file-chip span {
   display: block;
@@ -657,7 +666,6 @@ button.message:hover {
 }
 
 .pending-attachment {
-  margin-bottom: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
@@ -668,6 +676,36 @@ button.message:hover {
   align-items: center;
   gap: 10px;
   box-shadow: 0 8px 20px rgba(17, 24, 39, 0.04);
+}
+
+.pending-attachments {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pending-attachments-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.text-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--teal);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .pending-attachment strong,
