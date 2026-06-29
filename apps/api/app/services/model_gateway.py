@@ -160,6 +160,7 @@ class ModelGateway:
             "risk_level": risk_level,
             "findings": findings,
             "extracted_fields": extracted_fields,
+            "label_sections": parsed.get("label_sections") if isinstance(parsed.get("label_sections"), list) else [],
             "confidence": confidence,
             "recognized_text": recognized_text,
             "unreadable_parts": self._to_string_list(parsed.get("unreadable_parts")),
@@ -462,21 +463,24 @@ class ModelGateway:
             "rules": rules,
         }
         return (
-            "请识别上传文件中的中文标签/报告内容，并按检测行业审核要求输出紧凑 JSON。"
+            "请先完整还原上传文件中的中文标签/报告事实，再按检测行业审核要求输出紧凑 JSON。"
             "如果 route=vision+ocr，你必须把图片视觉识别作为第一依据，先独立阅读图片中的标签文字、表格和版面；"
             "OCR 文本只能作为辅助参考，不能因为 OCR 漏识别、乱码或字段为空就判定标签缺失。"
+            "你的处理顺序必须是：1 完整识别标签原文；2 按版面区域拆分字段；3 标记缺失/看不清/低置信度；"
+            "4 再使用 rules 对已确认字段做法规审核。"
             "当图片中确实看得见某字段时，应在 extracted_fields 中补全并在 findings 中不要输出该字段缺失风险。"
             "只有图片本身也看不清、被遮挡、缺少该字段，或法规规则核验后仍不合规，才输出风险。"
             "审核依据必须优先使用审核上下文 rules 中提供的本地标准规则、条款号、source_excerpt 和 suggestion；"
             "不要假装联网检索法规，不要编造未在上下文出现的具体条款。"
             "必须只返回 JSON，不要 Markdown。JSON 字段必须包含："
-            "summary, risk_level(low|medium|high), confidence(0-1), extracted_fields, findings, "
+            "summary, risk_level(low|medium|high), confidence(0-1), extracted_fields, label_sections, findings, "
             "audit_risks, unreadable_parts。"
             "extracted_fields 中尽量包含 product_name, product_type, net_content, shelf_life, "
             "production_date, expiry_date, license_no, manufacturer, address, phone, ingredients, additives, allergens, "
             "nutrition, nutrition_tables, claims, storage_condition, execution_standard。"
             "宠物食品还要抽取 target_pet, feeding_instruction, manual_warning；电子电器还要抽取 model_no, rating, certification, manual_warning。"
-            "营养表可以压缩表达，字段看不清就写 null。"
+            "label_sections 是数组，每项包含 field_key, label, text, confidence(0-1), present(boolean), note。"
+            "营养表可以压缩表达，字段看不清就写 null，并在 unreadable_parts 或 label_sections.note 中说明。"
             "findings 每项包含 title, risk_level, field_key, evidence_text, reason, suggestion, standard_code, standard_clause, source_excerpt。"
             "如果 OCR 不可用、OCR 低置信度或 extracted_fields_before_model 为空，请先基于图片独立识别字段。"
             "如果本地 rules 已经包含 failed 或 vision_check_required 规则，请结合你从图片识别出的字段重新判断，"

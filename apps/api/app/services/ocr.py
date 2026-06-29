@@ -71,6 +71,10 @@ class OCRAdapter:
             if provider in {"auto", "cascade", "multi", "macos", "macos-vision", "vision"} or platform.system() == "Darwin":
                 for variant_name, variant_path in variants:
                     self._append_candidate(candidates, self._try_macos_vision(variant_path, variant_name))
+            if provider in {"auto", "cascade", "multi"} and self._needs_region_ocr(candidates):
+                for region_name, region_path in self._region_variants(path, temp_paths):
+                    self._append_candidate(candidates, self._with_region_name(self._try_rapidocr(region_path), region_name))
+                    self._append_candidate(candidates, self._with_region_name(self._try_macos_vision(region_path, region_name), region_name))
         finally:
             for temp_path in temp_paths:
                 try:
@@ -86,12 +90,26 @@ class OCRAdapter:
         result["quality_score"] = self._ocr_quality_score(result)
         candidates.append(result)
 
+    def _with_region_name(self, result: Optional[dict], region_name: str) -> Optional[dict]:
+        if result:
+            result["provider"] = f"{result.get('provider', 'ocr')}:{region_name}"
+        return result
+
+    def _needs_region_ocr(self, candidates: list[dict[str, Any]]) -> bool:
+        if not candidates:
+            return True
+        best = max(candidates, key=lambda item: float(item.get("quality_score", 0)))
+        text = str(best.get("text", ""))
+        important_keywords = ["产品名称", "配料", "净含量", "生产日期", "保质期", "贮存", "许可证", "执行标准"]
+        hits = sum(1 for keyword in important_keywords if keyword in text)
+        return hits < 7 or len(text) < 900
+
     def _best_result(self, candidates: list[dict[str, Any]]) -> Optional[dict]:
         if not candidates:
             return None
         ranked = sorted(candidates, key=lambda item: float(item.get("quality_score", 0)), reverse=True)
         best = ranked[0]
-        merged = self._merge_candidates(ranked[:3])
+        merged = self._merge_candidates(ranked[:6])
         candidate_summary = [
             {
                 "provider": item.get("provider", ""),
@@ -101,9 +119,14 @@ class OCRAdapter:
             }
             for item in ranked
         ]
-        if merged and len(merged["text"]) > len(str(best.get("text", ""))) * 1.12:
+        best_keyword_hits = self._important_keyword_hits(str(best.get("text", "")))
+        merged_keyword_hits = self._important_keyword_hits(str(merged.get("text", ""))) if merged else 0
+        if merged and (
+            len(merged["text"]) > len(str(best.get("text", ""))) * 1.08
+            or merged_keyword_hits > best_keyword_hits
+        ):
             merged["provider"] = f"ocr-cascade:{'+'.join(str(item.get('provider', 'ocr')) for item in ranked[:3])}"
-            merged["average_confidence"] = max(float(item.get("average_confidence", 0)) for item in ranked[:3])
+            merged["average_confidence"] = max(float(item.get("average_confidence", 0)) for item in ranked[:6])
             merged["quality_score"] = self._ocr_quality_score(merged)
             merged["ocr_candidates"] = candidate_summary
             return merged
@@ -134,8 +157,29 @@ class OCRAdapter:
             "脂肪",
             "钠",
         ]
-        keyword_hits = sum(1 for keyword in keywords if keyword in text)
+        keyword_hits = self._important_keyword_hits(text)
         return min(useful_chars / 1500, 1) * 0.45 + confidence * 0.35 + min(keyword_hits / 12, 1) * 0.16 + min(line_count / 40, 1) * 0.04
+
+    def _important_keyword_hits(self, text: str) -> int:
+        keywords = [
+            "产品名称",
+            "配料",
+            "营养成分",
+            "净含量",
+            "生产日期",
+            "保质期",
+            "贮存",
+            "生产商",
+            "地址",
+            "许可证",
+            "执行标准",
+            "SC",
+            "能量",
+            "蛋白质",
+            "脂肪",
+            "钠",
+        ]
+        return sum(1 for keyword in keywords if keyword in text)
 
     def _merge_candidates(self, candidates: list[dict[str, Any]]) -> Optional[dict]:
         if not candidates:
@@ -203,6 +247,42 @@ class OCRAdapter:
         except Exception:
             return variants, temp_paths
         return variants, temp_paths
+
+    def _region_variants(self, path: Path, temp_paths: list[Path]) -> list[tuple[str, Path]]:
+        regions: list[tuple[str, Path]] = []
+        try:
+            from PIL import Image, ImageEnhance, ImageFilter, ImageOps
+        except Exception:
+            return regions
+
+        try:
+            with Image.open(path) as image:
+                image = ImageOps.exif_transpose(image)
+                if image.mode not in {"RGB", "L"}:
+                    image = image.convert("RGB")
+                width, height = image.size
+                boxes = {
+                    "label-bottom": (0, int(height * 0.46), width, height),
+                    "label-left": (0, int(height * 0.36), int(width * 0.58), int(height * 0.86)),
+                    "label-right": (int(width * 0.42), int(height * 0.36), width, int(height * 0.86)),
+                }
+                for name, box in boxes.items():
+                    cropped = image.crop(box)
+                    longest = max(cropped.size)
+                    scale = min(2.2, max(1.0, 1700 / max(longest, 1)))
+                    if scale > 1:
+                        cropped = cropped.resize((int(cropped.width * scale), int(cropped.height * scale)))
+                    grayscale = ImageOps.grayscale(cropped)
+                    enhanced = ImageOps.autocontrast(grayscale)
+                    enhanced = ImageEnhance.Contrast(enhanced).enhance(1.45)
+                    enhanced = enhanced.filter(ImageFilter.SHARPEN)
+                    temp = Path(tempfile.NamedTemporaryFile(suffix=f"-{name}.png", delete=False).name)
+                    enhanced.save(temp)
+                    temp_paths.append(temp)
+                    regions.append((name, temp))
+        except Exception:
+            return regions
+        return regions
 
     def _try_paddleocr(self, path: Path) -> Optional[dict]:
         provider = get_settings().ocr_provider.lower()

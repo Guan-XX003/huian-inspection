@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.database import SessionLocal
 from app.main import app
 from app.models import Industry, ModelProvider, UploadedFile
+from app.services.label_precheck import build_label_precheck, precheck_findings
 from app.services.industry_router import classify_industry_code
 from app.services.model_gateway import ModelGateway
 
@@ -104,6 +105,61 @@ def test_audit_uses_model_extracted_fields(monkeypatch, tmp_path) -> None:
     assert task["model_used"] == "test/vision-model"
     assert task["final_report"]["route"] == "vision+ocr"
     assert task["final_report"]["vision_primary"] is True
+    assert task["final_report"]["label_precheck"]["missing_fields"]
+
+
+def test_label_precheck_splits_fields_and_flags_uncertain_items() -> None:
+    ocr_result = {
+        "text": "\n".join(
+            [
+                "产品名称：烧凉粉（方便凉粉）",
+                "生产日期/保质期到期日：见包装喷码",
+                "配料",
+                "调味酱包：芝麻酱、植物油、辣椒、食品添加剂（辣椒红）",
+                "食品生产许可证编号：SC10741018302531",
+                "生产商：安福多（郑州）食品有限公司",
+                "地址：河南省郑州市新密市大隗镇进化村河东组88号",
+                "保质期：45天",
+                "贮存条件：常温避光储存，严禁冷藏",
+                "放行标准：OIAFD 00015",
+            ]
+        ),
+        "average_confidence": 0.94,
+        "blocks": [],
+    }
+    fields = {
+        "product_name": "烧凉粉（方便凉粉）",
+        "ingredients": "调味酱包：芝麻酱、植物油、辣椒、食品添加剂（辣椒红）",
+        "license_no": "SC10741018302531",
+        "manufacturer": "安福多（郑州）食品有限公司",
+        "address": "河南省郑州市新密市大隗镇进化村河东组88号",
+        "shelf_life": "45天",
+        "production_date": "见包装喷码",
+        "storage_condition": "常温避光储存，严禁冷藏",
+        "execution_standard": "Q/AFD0001S",
+    }
+    field_keys = [
+        "product_name",
+        "ingredients",
+        "nutrition",
+        "net_content",
+        "license_no",
+        "manufacturer",
+        "address",
+        "shelf_life",
+        "production_date",
+        "storage_condition",
+        "execution_standard",
+    ]
+
+    precheck = build_label_precheck(ocr_result, fields, field_keys, "food")
+
+    assert precheck["fields"]["product_name"] == "烧凉粉（方便凉粉）"
+    assert precheck["fields"]["execution_standard"] == "Q/AFD0001S"
+    assert "net_content" in precheck["missing_fields"]
+    assert "ingredients" not in precheck["low_confidence_fields"]
+    findings = precheck_findings(precheck)
+    assert any(item["field_key"] == "net_content" for item in findings)
 
 
 def test_standard_document_import_creates_reviewable_rules(monkeypatch, tmp_path) -> None:

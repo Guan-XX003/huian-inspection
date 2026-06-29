@@ -10,6 +10,7 @@ from app.models import AuditRule, AuditTask, FieldTemplate, Industry, ModelProvi
 from app.schemas import AuditTaskCreate, AuditTaskRead, AuditTaskUpdate
 from app.services.extraction import extract_fields
 from app.services.industry_router import classify_industry_code
+from app.services.label_precheck import build_label_precheck, precheck_findings
 from app.services.model_gateway import get_model_gateway
 from app.services.ocr import get_ocr_adapter
 from app.services.quotes import recommend_items_for_audit
@@ -205,6 +206,10 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
     template = db.scalar(select(FieldTemplate).where(FieldTemplate.industry_id == industry.id))
     field_keys = loads(template.fields_json, []) if template else []
     fields = extract_fields(ocr_result["text"], field_keys)
+    label_precheck = build_label_precheck(ocr_result, fields, field_keys, industry.code)
+    fields = label_precheck["fields"]
+    ocr_result["label_precheck"] = label_precheck
+    ocr_result["unreadable_parts"] = label_precheck.get("unreadable_parts", [])
     rules = list(
         db.scalars(
             select(AuditRule)
@@ -227,6 +232,13 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
             ocr_result["text"] = str(model_result["recognized_text"])
         if model_result.get("confidence") is not None:
             ocr_result["average_confidence"] = float(model_result["confidence"])
+    if isinstance(model_result.get("label_sections"), list):
+        ocr_result["model_label_sections"] = model_result["label_sections"]
+    if (isinstance(model_fields, dict) and model_fields) or isinstance(model_result.get("label_sections"), list):
+        label_precheck = build_label_precheck(ocr_result, fields, field_keys, industry.code)
+        fields = label_precheck["fields"]
+        ocr_result["label_precheck"] = label_precheck
+        ocr_result["unreadable_parts"] = label_precheck.get("unreadable_parts", [])
     rule_results = evaluate_rules(rules, fields)
     _attach_clause_sources(db, rule_results)
     _attach_finding_clause_sources(db, model_result.get("findings", []))
@@ -246,8 +258,10 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
         if not item["passed"]
     ]
     existing_titles = {item.get("title") for item in model_result.get("findings", [])}
+    precheck_items = _dedupe_precheck_findings(precheck_findings(label_precheck), model_result.get("findings", []), rule_findings)
     model_result["findings"] = [
         *model_result.get("findings", []),
+        *precheck_items,
         *[item for item in rule_findings if item["title"] not in existing_titles],
     ]
     if any(item["risk_level"] == "high" for item in model_result["findings"]):
@@ -256,6 +270,8 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
         model_result["risk_level"] = "medium"
     needs_review = (
         ocr_result.get("average_confidence", 1) < 0.82
+        or bool(label_precheck.get("missing_fields"))
+        or bool(label_precheck.get("low_confidence_fields"))
         or model_result.get("risk_level") == "high"
         or any(not item["passed"] and item["risk_level"] == "high" for item in rule_results)
     )
@@ -267,6 +283,7 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
         "industry": industry.name,
         "industry_code": industry.code,
         "auto_classified_industry": ocr_result.get("auto_classified_industry", ""),
+        "label_precheck": label_precheck,
         "standards": sorted({item.get("standard") for item in rule_results if item.get("standard")}),
         "compliant_items": [item for item in rule_results if item["passed"]],
         "findings": [],
@@ -296,6 +313,29 @@ def create_task(payload: AuditTaskCreate, db: Session = Depends(get_db)) -> Audi
     db.commit()
     db.refresh(task)
     return serialize_task(task)
+
+
+def _dedupe_precheck_findings(
+    precheck_items: list[dict],
+    model_items: list[dict],
+    rule_items: list[dict],
+) -> list[dict]:
+    existing_fields = {
+        str(item.get("field_key") or "")
+        for item in [*model_items, *rule_items]
+        if isinstance(item, dict) and _looks_like_missing_finding(str(item.get("title") or ""), str(item.get("reason") or ""))
+    }
+    return [
+        item
+        for item in precheck_items
+        if str(item.get("field_key") or "") not in existing_fields
+        or not _looks_like_missing_finding(str(item.get("title") or ""), str(item.get("reason") or ""))
+    ]
+
+
+def _looks_like_missing_finding(title: str, reason: str) -> bool:
+    text = f"{title} {reason}"
+    return any(marker in text for marker in ["缺失", "未识别", "未能", "未确认", "必填"])
 
 
 def _attach_clause_sources(db: Session, rule_results: list[dict]) -> None:

@@ -147,6 +147,23 @@ export type AuditFinding = {
   recommended_item_codes: string[];
 };
 
+export type LabelPrecheck = {
+  summary?: string;
+  recognition_score?: number;
+  completeness_score?: number;
+  required_fields?: string[];
+  missing_fields?: string[];
+  low_confidence_fields?: string[];
+  sections?: Array<{
+    field_key: string;
+    label: string;
+    text: string;
+    present: boolean;
+    confidence: number;
+    source: string;
+  }>;
+};
+
 export type AuditTask = {
   id: string;
   industry_id: string;
@@ -158,7 +175,7 @@ export type AuditTask = {
   session_group: string;
   session_archived: boolean;
   status: string;
-  ocr_result: { text?: string; average_confidence?: number };
+  ocr_result: { text?: string; average_confidence?: number; label_precheck?: LabelPrecheck };
   extracted_fields: Record<string, string>;
   rule_results: Array<Record<string, string | boolean>>;
   model_result: Record<string, string | boolean | AuditFinding[]>;
@@ -168,6 +185,7 @@ export type AuditTask = {
     route?: string;
     vision_primary?: boolean;
     industry?: string;
+    label_precheck?: LabelPrecheck;
     standards?: string[];
     compliant_items?: Array<Record<string, unknown>>;
     findings?: AuditFinding[];

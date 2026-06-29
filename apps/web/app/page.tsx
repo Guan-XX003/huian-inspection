@@ -660,6 +660,9 @@ export default function Home() {
       ) || null,
     [modelForm.base_url, modelForm.model, modelForm.provider, models],
   );
+  const labelPrecheck = currentTask?.final_report?.label_precheck || currentTask?.ocr_result?.label_precheck || null;
+  const precheckMissing = Array.isArray(labelPrecheck?.missing_fields) ? labelPrecheck.missing_fields : [];
+  const precheckLowConfidence = Array.isArray(labelPrecheck?.low_confidence_fields) ? labelPrecheck.low_confidence_fields : [];
 
   useEffect(() => {
     void loadInitialData();
@@ -1734,6 +1737,24 @@ export default function Home() {
                       <strong className="blue-text">{summary.low}</strong>
                     </div>
                   </div>
+
+                  {labelPrecheck ? (
+                    <div className="precheck-box">
+                      <div className="precheck-head">
+                        <strong>标签识别预审</strong>
+                        <span>{Math.round((labelPrecheck.recognition_score || 0) * 100)}%</span>
+                      </div>
+                      <p>{labelPrecheck.summary || "已完成标签结构化识别。"}</p>
+                      <div className="precheck-tags">
+                        {precheckMissing.length ? (
+                          <span className="pill orange">未确认 {precheckMissing.length} 项</span>
+                        ) : (
+                          <span className="pill green">必填字段基本齐全</span>
+                        )}
+                        {precheckLowConfidence.length ? <span className="pill blue">需复核 {precheckLowConfidence.length} 项</span> : null}
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="finding-list">
                     {findings.length ? (

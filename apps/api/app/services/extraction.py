@@ -16,9 +16,9 @@ def extract_fields(ocr_text: str, field_keys: list[str]) -> dict:
         "address": r"(?:地址|生产地址|制造商地址|注册地址|地\s*址)[:：]\s*(.+)",
         "phone": r"(?:电话|联系电话|联系方式|客服热线|服务热线)[:：]\s*(.+)",
         "shelf_life": r"(?:保质期|质保期|有效期)[:：]\s*(.+)",
-        "production_date": r"(?:生产日期|制造日期|生产批号)[:：]\s*(.+)",
+        "production_date": r"(?:生产日期(?:\s*/\s*保质期到期日)?|制造日期|生产批号|喷码日期)[:：]\s*(.+)",
         "expiry_date": r"(?:到期日期|失效日期|有效期至|保质期至)[:：]\s*(.+)",
-        "execution_standard": r"(?:执行标准|产品标准|标准号|本行标港|执行标港)[:：]\s*([A-Z0-9/.\-\s]+)",
+        "execution_standard": r"(?:执行标准|产品标准|标准号|本行标港|执行标港|放行标准)[:：]\s*([A-Z0-9/.\-\s]+)",
         "claims": r"宣传语[:：]\s*(.+)",
         "storage_condition": r"(?:贮存条件|储存条件|保存条件)[:：]\s*(.+)",
         "target_pet": r"(?:适用(?:对象|宠物|阶段)|适用犬种|适用猫种)[:：]\s*(.+)",
@@ -49,9 +49,12 @@ def _normalize_ocr_text(text: str) -> str:
         "周味": "调味",
         "本行标港": "执行标准",
         "执行标港": "执行标准",
+        "放行标准": "执行标准",
         "食品生产许可证编品": "食品生产许可证编号",
         "晋砂糖": "白砂糖",
         "父再水": "饮用水",
+        "OIAFD": "Q/AFD",
+        "O/AFD": "Q/AFD",
     }
     for source, target in replacements.items():
         normalized = normalized.replace(source, target)
@@ -106,7 +109,19 @@ def _fill_food_fallbacks(fields: dict[str, str], text: str) -> None:
     if not fields.get("execution_standard"):
         match = re.search(r"Q/[A-Z0-9]+\s*\d{4,}[A-Z]?", text)
         if match:
-            fields["execution_standard"] = match.group(0).replace(" ", "")
+            fields["execution_standard"] = _normalize_standard_code(match.group(0))
+    if fields.get("execution_standard"):
+        fields["execution_standard"] = _normalize_standard_code(fields["execution_standard"])
+    if fields.get("production_date") and any(marker in fields["production_date"] for marker in ["见包装喷码", "见喷码"]):
+        date_matches = re.findall(r"20\d{2}[/.\-]\d{1,2}[/.\-]\d{1,2}", text)
+        if date_matches:
+            fields["production_date"] = f"{fields['production_date']}；喷码：{date_matches[0]}"
+            if len(date_matches) > 1 and not fields.get("expiry_date"):
+                fields["expiry_date"] = date_matches[1]
+    if not _has_meaningful_ingredients(fields.get("ingredients", "")):
+        ingredients = _collect_ingredient_lines(text)
+        if ingredients:
+            fields["ingredients"] = ingredients
     if not fields.get("product_name"):
         match = re.search(r"([\u4e00-\u9fa5]{1,12}凉粉[^\n]*)", text)
         if match:
@@ -127,3 +142,58 @@ def _fill_food_fallbacks(fields: dict[str, str], text: str) -> None:
             fields["target_pet"] = "、".join(dict.fromkeys(pet_hits))
     if not fields.get("feeding_instruction") and any(keyword in text for keyword in ["饲喂", "喂食", "喂养", "建议喂食量"]):
         fields["feeding_instruction"] = "已识别到饲喂或喂食说明"
+
+
+def _normalize_standard_code(value: str) -> str:
+    normalized = value.strip().replace(" ", "")
+    normalized = normalized.replace("OIAFD", "Q/AFD").replace("O/AFD", "Q/AFD")
+    normalized = normalized.replace("00015", "0001S")
+    return normalized
+
+
+def _has_meaningful_ingredients(value: str) -> bool:
+    normalized = value.strip(" ：:;；,，")
+    return len(normalized) > 8 and normalized not in {"配料", "配料表", "原料", "原料组成"}
+
+
+def _collect_ingredient_lines(text: str) -> str:
+    ingredient_markers = [
+        "饮用水",
+        "淀粉",
+        "食用盐",
+        "白砂糖",
+        "植物油",
+        "辣椒",
+        "香辛料",
+        "食品添加剂",
+        "谷氨酸钠",
+        "呈味核苷酸",
+        "调味",
+        "致敏物质",
+        "大豆",
+        "芝麻",
+    ]
+    stop_markers = ["营养成分", "执行标准", "生产商", "运营商", "地址", "许可证", "保质期", "贮存条件", "温馨提示"]
+    lines = [line.strip(" ：:;；,，") for line in text.splitlines() if line.strip()]
+    selected: list[str] = []
+    recent_ingredient_line = False
+    for line in lines:
+        compact_line = re.sub(r"\s+", "", line)
+        if any(stop in compact_line for stop in stop_markers):
+            recent_ingredient_line = False
+            continue
+        has_marker = any(marker in line for marker in ingredient_markers)
+        starts_like_pack = re.match(r"^(?:调味|酱|水|料)?包[:：]", line) is not None
+        likely_continuation = recent_ingredient_line and len(line) >= 3 and any(char in line for char in "、，,（）()")
+        if has_marker or starts_like_pack or ("配料" in line and len(line) > 4):
+            selected.append(line)
+            recent_ingredient_line = True
+        elif likely_continuation:
+            selected.append(line)
+            recent_ingredient_line = True
+        else:
+            recent_ingredient_line = False
+        if len(selected) >= 10:
+            break
+    cleaned = [line for line in selected if line not in {"配料", "原料"}]
+    return "；".join(cleaned[:8])[:600]

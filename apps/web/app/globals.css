@@ -850,6 +850,44 @@ button.message:hover {
   color: var(--blue);
 }
 
+.precheck-box {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 13px;
+  margin-bottom: 18px;
+}
+
+.precheck-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.precheck-head strong {
+  font-size: 14px;
+}
+
+.precheck-head span {
+  color: var(--teal);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.precheck-box p {
+  margin: 8px 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.precheck-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
 .finding-list {
   display: grid;
   gap: 10px;
